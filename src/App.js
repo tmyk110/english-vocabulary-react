@@ -23,11 +23,13 @@ function App() {
 
       if (error) {
         console.error('Error fetching words:', error);
+        console.log('Falling back to localStorage');
         const savedWords = localStorage.getItem('vocabularyWords');
         if (savedWords) {
           setWords(JSON.parse(savedWords));
         }
       } else {
+        console.log('Successfully fetched from Supabase:', data);
         setWords(data);
       }
     } catch (error) {
