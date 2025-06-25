@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/english-vocabulary-react/static/css/main.d5705301.css",
-    "main.js": "/english-vocabulary-react/static/js/main.39ababfa.js",
+    "main.js": "/english-vocabulary-react/static/js/main.441314f9.js",
     "static/js/453.a928a595.chunk.js": "/english-vocabulary-react/static/js/453.a928a595.chunk.js",
     "index.html": "/english-vocabulary-react/index.html",
     "main.d5705301.css.map": "/english-vocabulary-react/static/css/main.d5705301.css.map",
-    "main.39ababfa.js.map": "/english-vocabulary-react/static/js/main.39ababfa.js.map",
+    "main.441314f9.js.map": "/english-vocabulary-react/static/js/main.441314f9.js.map",
     "453.a928a595.chunk.js.map": "/english-vocabulary-react/static/js/453.a928a595.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.d5705301.css",
-    "static/js/main.39ababfa.js"
+    "static/js/main.441314f9.js"
   ]
 }
