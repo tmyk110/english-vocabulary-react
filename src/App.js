@@ -10,10 +10,12 @@ function App() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    console.log('App loaded - starting to fetch words');
     fetchWords();
   }, []);
 
   const fetchWords = async () => {
+    console.log('fetchWords called');
     try {
       setLoading(true);
       const { data, error } = await supabase
