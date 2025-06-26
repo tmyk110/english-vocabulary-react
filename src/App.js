@@ -8,6 +8,8 @@ function App() {
   const [newMeaning, setNewMeaning] = useState('');
   const [showReview, setShowReview] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [dictionaryLoading, setDictionaryLoading] = useState(false);
+  const [dictionaryResult, setDictionaryResult] = useState('');
 
   useEffect(() => {
     fetchWords();
@@ -91,6 +93,35 @@ function App() {
     }
   };
 
+  const lookupDictionary = async () => {
+    if (!newWord.trim()) {
+      alert('英単語を入力してください');
+      return;
+    }
+
+    try {
+      setDictionaryLoading(true);
+      // CORSプロキシを使用してAPIにアクセス
+      const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(`https://api.excelapi.org/dictionary/enja?word=${encodeURIComponent(newWord.trim())}`)}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        const meaning = data.contents;
+        if (meaning && meaning.trim()) {
+          setDictionaryResult(meaning.trim());
+        } else {
+          setDictionaryResult('辞書に登録されていない単語です');
+        }
+      } else {
+        setDictionaryResult('辞書の検索に失敗しました');
+      }
+    } catch (error) {
+      setDictionaryResult('辞書の検索中にエラーが発生しました: ' + error.message);
+    } finally {
+      setDictionaryLoading(false);
+    }
+  };
+
   const deleteWord = async (id) => {
     try {
       setLoading(true);
@@ -139,13 +170,36 @@ function App() {
           <div className="word-input-section">
             <h2>新しい単語を登録</h2>
             <div className="input-group">
-              <input
-                type="text"
-                placeholder="英単語を入力"
-                value={newWord}
-                onChange={(e) => setNewWord(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && addWord()}
-              />
+              <div className="word-input-container">
+                <input
+                  type="text"
+                  placeholder="英単語を入力"
+                  value={newWord}
+                  onChange={(e) => setNewWord(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && addWord()}
+                />
+                <button 
+                  onClick={lookupDictionary} 
+                  disabled={dictionaryLoading || !newWord.trim()}
+                  className="dictionary-btn"
+                >
+                  {dictionaryLoading ? '検索中...' : '辞書で調べる'}
+                </button>
+              </div>
+              
+              {dictionaryResult && (
+                <div className="dictionary-result">
+                  <h4>辞書の結果:</h4>
+                  <p>{dictionaryResult}</p>
+                  <button 
+                    onClick={() => setNewMeaning(dictionaryResult)}
+                    className="use-result-btn"
+                  >
+                    この意味を使用
+                  </button>
+                </div>
+              )}
+              
               <input
                 type="text"
                 placeholder="意味を入力"
