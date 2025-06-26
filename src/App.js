@@ -16,6 +16,7 @@ function App() {
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showTooltip, setShowTooltip] = useState(false);
 
   const fetchWords = React.useCallback(async () => {
     if (!user) return;
@@ -276,12 +277,30 @@ function App() {
               </form>
               
               <div className="auth-switch">
-                <button
-                  onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
-                  className="link-btn"
-                >
-                  {authMode === 'login' ? 'アカウントを作成' : 'ログインに戻る'}
-                </button>
+                {authMode === 'login' ? (
+                  <div className="tooltip-container">
+                    <button
+                      className="link-btn disabled"
+                      disabled
+                      onMouseEnter={() => setShowTooltip(true)}
+                      onMouseLeave={() => setShowTooltip(false)}
+                    >
+                      アカウントを作成
+                    </button>
+                    {showTooltip && (
+                      <div className="tooltip">
+                        現在、新規ユーザーの登録を一時的に停止しております
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setAuthMode('login')}
+                    className="link-btn"
+                  >
+                    ログインに戻る
+                  </button>
+                )}
                 <button onClick={() => setShowAuth(false)} className="link-btn">
                   戻る
                 </button>
