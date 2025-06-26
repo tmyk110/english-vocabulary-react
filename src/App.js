@@ -10,12 +10,10 @@ function App() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    console.log('App loaded - starting to fetch words');
     fetchWords();
   }, []);
 
   const fetchWords = async () => {
-    console.log('fetchWords called');
     try {
       setLoading(true);
       const { data, error } = await supabase
@@ -24,18 +22,14 @@ function App() {
         .order('date_added', { ascending: false });
 
       if (error) {
-        console.error('Error fetching words:', error);
-        console.log('Falling back to localStorage');
         const savedWords = localStorage.getItem('vocabularyWords');
         if (savedWords) {
           setWords(JSON.parse(savedWords));
         }
       } else {
-        console.log('Successfully fetched from Supabase:', data);
         setWords(data);
       }
     } catch (error) {
-      console.error('Error:', error);
       const savedWords = localStorage.getItem('vocabularyWords');
       if (savedWords) {
         setWords(JSON.parse(savedWords));
@@ -64,7 +58,6 @@ function App() {
           .select();
 
         if (error) {
-          console.error('Error adding word:', error);
           const newWordObj = {
             id: Date.now(),
             word: newWord.trim(),
@@ -81,7 +74,6 @@ function App() {
         setNewWord('');
         setNewMeaning('');
       } catch (error) {
-        console.error('Error:', error);
         const newWordObj = {
           id: Date.now(),
           word: newWord.trim(),
@@ -108,7 +100,6 @@ function App() {
         .eq('id', id);
 
       if (error) {
-        console.error('Error deleting word:', error);
         const updatedWords = words.filter(word => word.id !== id);
         setWords(updatedWords);
         saveToLocalStorage(updatedWords);
@@ -116,7 +107,6 @@ function App() {
         await fetchWords();
       }
     } catch (error) {
-      console.error('Error:', error);
       const updatedWords = words.filter(word => word.id !== id);
       setWords(updatedWords);
       saveToLocalStorage(updatedWords);
