@@ -17,31 +17,7 @@ function App() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  useEffect(() => {
-    // 認証状態を監視
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user ?? null);
-        setAuthLoading(false);
-        if (session?.user) {
-          fetchWords();
-        }
-      }
-    );
-
-    // 初期認証状態をチェック
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setAuthLoading(false);
-      if (session?.user) {
-        fetchWords();
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const fetchWords = async () => {
+  const fetchWords = React.useCallback(async () => {
     if (!user) return;
     
     try {
@@ -68,7 +44,32 @@ function App() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    // 認証状態を監視
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user ?? null);
+        setAuthLoading(false);
+      }
+    );
+
+    // 初期認証状態をチェック
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setAuthLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchWords();
+    }
+  }, [user, fetchWords]);
+
 
   const saveToLocalStorage = (wordList) => {
     if (user) {
