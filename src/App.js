@@ -10,21 +10,50 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [dictionaryLoading, setDictionaryLoading] = useState(false);
   const [dictionaryResult, setDictionaryResult] = useState('');
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [showAuth, setShowAuth] = useState(false);
+  const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   useEffect(() => {
-    fetchWords();
+    // 認証状態を監視
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user ?? null);
+        setAuthLoading(false);
+        if (session?.user) {
+          fetchWords();
+        }
+      }
+    );
+
+    // 初期認証状態をチェック
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setAuthLoading(false);
+      if (session?.user) {
+        fetchWords();
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const fetchWords = async () => {
+    if (!user) return;
+    
     try {
       setLoading(true);
       const { data, error } = await supabase
         .from('vocabulary_words')
         .select('*')
+        .eq('user_id', user.id)
         .order('date_added', { ascending: false });
 
       if (error) {
-        const savedWords = localStorage.getItem('vocabularyWords');
+        const savedWords = localStorage.getItem(`vocabularyWords_${user.id}`);
         if (savedWords) {
           setWords(JSON.parse(savedWords));
         }
@@ -32,7 +61,7 @@ function App() {
         setWords(data);
       }
     } catch (error) {
-      const savedWords = localStorage.getItem('vocabularyWords');
+      const savedWords = localStorage.getItem(`vocabularyWords_${user.id}`);
       if (savedWords) {
         setWords(JSON.parse(savedWords));
       }
@@ -42,7 +71,9 @@ function App() {
   };
 
   const saveToLocalStorage = (wordList) => {
-    localStorage.setItem('vocabularyWords', JSON.stringify(wordList));
+    if (user) {
+      localStorage.setItem(`vocabularyWords_${user.id}`, JSON.stringify(wordList));
+    }
   };
 
   const addWord = async () => {
@@ -54,7 +85,8 @@ function App() {
           .insert([
             {
               word: newWord.trim(),
-              meaning: newMeaning.trim()
+              meaning: newMeaning.trim(),
+              user_id: user.id
             }
           ])
           .select();
@@ -122,6 +154,55 @@ function App() {
     }
   };
 
+  const handleAuth = async (e) => {
+    e.preventDefault();
+    if (!email || !password) {
+      alert('メールアドレスとパスワードを入力してください');
+      return;
+    }
+
+    try {
+      setAuthLoading(true);
+      let result;
+      
+      if (authMode === 'login') {
+        result = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+      } else {
+        result = await supabase.auth.signUp({
+          email,
+          password,
+        });
+      }
+
+      if (result.error) {
+        alert(result.error.message);
+      } else {
+        setShowAuth(false);
+        setEmail('');
+        setPassword('');
+        if (authMode === 'signup') {
+          alert('確認メールを送信しました。メールを確認してアカウントを有効化してください。');
+        }
+      }
+    } catch (error) {
+      alert('認証エラーが発生しました');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setWords([]);
+    } catch (error) {
+      alert('ログアウトエラーが発生しました');
+    }
+  };
+
   const deleteWord = async (id) => {
     try {
       setLoading(true);
@@ -146,10 +227,83 @@ function App() {
     }
   };
 
+  if (authLoading) {
+    return (
+      <div className="App">
+        <header className="App-header">
+          <h1>英単語学習アプリ</h1>
+          <p>読み込み中...</p>
+        </header>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="App">
+        <header className="App-header">
+          <h1>英単語学習アプリ</h1>
+          
+          {!showAuth ? (
+            <div className="auth-welcome">
+              <p>英単語とその意味を登録・管理できる学習アプリです</p>
+              <button onClick={() => setShowAuth(true)} className="auth-btn">
+                ログイン / サインアップ
+              </button>
+            </div>
+          ) : (
+            <div className="auth-form">
+              <h2>{authMode === 'login' ? 'ログイン' : 'サインアップ'}</h2>
+              <form onSubmit={handleAuth}>
+                <input
+                  type="email"
+                  placeholder="メールアドレス"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+                <input
+                  type="password"
+                  placeholder="パスワード"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                <button type="submit" disabled={authLoading}>
+                  {authLoading ? '処理中...' : (authMode === 'login' ? 'ログイン' : 'サインアップ')}
+                </button>
+              </form>
+              
+              <div className="auth-switch">
+                <button
+                  onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
+                  className="link-btn"
+                >
+                  {authMode === 'login' ? 'アカウントを作成' : 'ログインに戻る'}
+                </button>
+                <button onClick={() => setShowAuth(false)} className="link-btn">
+                  戻る
+                </button>
+              </div>
+            </div>
+          )}
+        </header>
+      </div>
+    );
+  }
+
   return (
     <div className="App">
       <header className="App-header">
-        <h1>英単語学習アプリ</h1>
+        <div className="header-top">
+          <h1>英単語学習アプリ</h1>
+          <div className="user-info">
+            <span>{user.email}</span>
+            <button onClick={handleLogout} className="logout-btn">
+              ログアウト
+            </button>
+          </div>
+        </div>
         
         <div className="nav-buttons">
           <button 

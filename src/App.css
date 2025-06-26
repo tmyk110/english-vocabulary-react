@@ -155,6 +155,132 @@
   background-color: #218838 !important;
 }
 
+/* Authentication Styles */
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  font-size: 14px;
+}
+
+.logout-btn {
+  background-color: #ff4757;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.logout-btn:hover {
+  background-color: #ff3742;
+}
+
+.auth-welcome {
+  text-align: center;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.auth-welcome p {
+  margin-bottom: 30px;
+  font-size: 18px;
+  color: #ccc;
+}
+
+.auth-btn {
+  background-color: #61dafb;
+  color: white;
+  border: none;
+  padding: 15px 30px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s;
+}
+
+.auth-btn:hover {
+  background-color: #21a9c7;
+}
+
+.auth-form {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.auth-form h2 {
+  margin-bottom: 30px;
+  color: #61dafb;
+}
+
+.auth-form form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.auth-form input {
+  padding: 12px;
+  font-size: 16px;
+  border: 2px solid #ddd;
+  border-radius: 5px;
+  outline: none;
+}
+
+.auth-form input:focus {
+  border-color: #61dafb;
+}
+
+.auth-form button[type="submit"] {
+  background-color: #61dafb;
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s;
+}
+
+.auth-form button[type="submit"]:hover:not(:disabled) {
+  background-color: #21a9c7;
+}
+
+.auth-form button[type="submit"]:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.auth-switch {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: #61dafb;
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: 14px;
+}
+
+.link-btn:hover {
+  color: #21a9c7;
+}
+
 .word-list {
   display: flex;
   flex-direction: column;
