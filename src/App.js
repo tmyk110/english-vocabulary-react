@@ -229,6 +229,12 @@ function App() {
     }
   };
 
+  const openChatGPT = (word) => {
+    const prompt = encodeURIComponent(`${word}を使った英文例をください`);
+    const chatgptUrl = `https://chat.openai.com/?q=${prompt}`;
+    window.open(chatgptUrl, '_blank');
+  };
+
   if (authLoading) {
     return (
       <div className="App">
@@ -402,12 +408,20 @@ function App() {
                       <p>{word.meaning}</p>
                       <small>登録日: {word.dateAdded || new Date(word.date_added).toLocaleDateString()}</small>
                     </div>
-                    <button 
-                      onClick={() => deleteWord(word.id)}
-                      className="delete-btn"
-                    >
-                      削除
-                    </button>
+                    <div className="word-actions">
+                      <button 
+                        onClick={() => openChatGPT(word.word)}
+                        className="chatgpt-btn"
+                      >
+                        ChatGPTで学習
+                      </button>
+                      <button 
+                        onClick={() => deleteWord(word.id)}
+                        className="delete-btn"
+                      >
+                        削除
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
