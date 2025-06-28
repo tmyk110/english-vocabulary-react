@@ -17,6 +17,8 @@ function App() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showTooltip, setShowTooltip] = useState(false);
+  const [visibleMeanings, setVisibleMeanings] = useState(new Set());
+  const [showAllMeanings, setShowAllMeanings] = useState(false);
 
   const fetchWords = React.useCallback(async () => {
     if (!user) return;
@@ -235,6 +237,29 @@ function App() {
     window.open(chatgptUrl, '_blank');
   };
 
+  const toggleMeaning = (wordId) => {
+    setVisibleMeanings(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(wordId)) {
+        newSet.delete(wordId);
+      } else {
+        newSet.add(wordId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleAllMeanings = () => {
+    if (showAllMeanings) {
+      setVisibleMeanings(new Set());
+      setShowAllMeanings(false);
+    } else {
+      const allWordIds = new Set(words.map(word => word.id));
+      setVisibleMeanings(allWordIds);
+      setShowAllMeanings(true);
+    }
+  };
+
   if (authLoading) {
     return (
       <div className="App">
@@ -394,7 +419,17 @@ function App() {
           </div>
         ) : (
           <div className="word-list-section">
-            <h2>登録済み単語一覧 ({words.length}個)</h2>
+            <div className="word-list-header">
+              <h2>登録済み単語一覧 ({words.length}個)</h2>
+              {words.length > 0 && (
+                <button 
+                  onClick={toggleAllMeanings}
+                  className="bulk-toggle-btn"
+                >
+                  {showAllMeanings ? '全て隠す' : '全て表示'}
+                </button>
+              )}
+            </div>
             {loading ? (
               <p>読み込み中...</p>
             ) : words.length === 0 ? (
@@ -404,11 +439,24 @@ function App() {
                 {words.map((word) => (
                   <div key={word.id} className="word-card">
                     <div className="word-content">
-                      <h3>{word.word}</h3>
-                      <p>{word.meaning}</p>
+                      <h3 
+                        onClick={() => toggleMeaning(word.id)}
+                        className="word-title clickable"
+                      >
+                        {word.word}
+                      </h3>
+                      {visibleMeanings.has(word.id) && (
+                        <p className="word-meaning">{word.meaning}</p>
+                      )}
                       <small>登録日: {word.dateAdded || new Date(word.date_added).toLocaleDateString()}</small>
                     </div>
                     <div className="word-actions">
+                      <button 
+                        onClick={() => toggleMeaning(word.id)}
+                        className="meaning-toggle-btn"
+                      >
+                        {visibleMeanings.has(word.id) ? '意味を隠す' : '意味を表示'}
+                      </button>
                       <button 
                         onClick={() => openChatGPT(word.word)}
                         className="chatgpt-btn"

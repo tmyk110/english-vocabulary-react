@@ -359,6 +359,80 @@
   font-size: 14px;
 }
 
+.word-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.word-list-header h2 {
+  margin: 0;
+}
+
+.bulk-toggle-btn {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.bulk-toggle-btn:hover {
+  background-color: #45a049;
+}
+
+.word-title {
+  margin: 0 0 10px 0;
+  color: #61dafb;
+  font-size: 24px;
+}
+
+.word-title.clickable {
+  cursor: pointer;
+  transition: color 0.3s;
+}
+
+.word-title.clickable:hover {
+  color: #21a9c7;
+}
+
+.word-meaning {
+  margin: 0 0 10px 0;
+  font-size: 18px;
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.meaning-toggle-btn {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+  white-space: nowrap;
+}
+
+.meaning-toggle-btn:hover {
+  background-color: #545b62;
+}
+
 .word-actions {
   display: flex;
   gap: 10px;
@@ -414,12 +488,22 @@
     text-align: center;
   }
   
+  .word-list-header {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+  
+  .bulk-toggle-btn {
+    width: 100%;
+  }
+  
   .word-actions {
     flex-direction: column;
     width: 100%;
   }
   
-  .chatgpt-btn, .delete-btn {
+  .meaning-toggle-btn, .chatgpt-btn, .delete-btn {
     width: 100%;
   }
 }
