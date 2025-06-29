@@ -1,6 +1,38 @@
 .App {
   text-align: center;
   min-height: 100vh;
+  background-color: #282c34;
+}
+
+/* スクロールバーのスタイリング */
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: #282c34;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #282c34;
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3a3f47;
+}
+
+/* Firefox用のスクロールバー */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #282c34 #282c34;
+}
+
+/* ページ全体の背景色を統一 */
+body {
+  background-color: #282c34;
+  margin: 0;
+  padding: 0;
 }
 
 .App-header {

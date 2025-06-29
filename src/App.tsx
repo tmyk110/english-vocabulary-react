@@ -1,24 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 import { supabase } from './supabaseClient';
+import type { VocabularyWord, User, AuthMode } from './types';
 
-function App() {
-  const [words, setWords] = useState([]);
-  const [newWord, setNewWord] = useState('');
-  const [newMeaning, setNewMeaning] = useState('');
-  const [showReview, setShowReview] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [dictionaryLoading, setDictionaryLoading] = useState(false);
-  const [dictionaryResult, setDictionaryResult] = useState('');
-  const [user, setUser] = useState(null);
-  const [authLoading, setAuthLoading] = useState(true);
-  const [showAuth, setShowAuth] = useState(false);
-  const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showTooltip, setShowTooltip] = useState(false);
-  const [visibleMeanings, setVisibleMeanings] = useState(new Set());
-  const [showAllMeanings, setShowAllMeanings] = useState(false);
+function App(): React.JSX.Element {
+  const [words, setWords] = useState<VocabularyWord[]>([]);
+  const [newWord, setNewWord] = useState<string>('');
+  const [newMeaning, setNewMeaning] = useState<string>('');
+  const [showReview, setShowReview] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [dictionaryLoading, setDictionaryLoading] = useState<boolean>(false);
+  const [dictionaryResult, setDictionaryResult] = useState<string>('');
+  const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState<boolean>(true);
+  const [showAuth, setShowAuth] = useState<boolean>(false);
+  const [authMode, setAuthMode] = useState<AuthMode>('login');
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [showTooltip, setShowTooltip] = useState<boolean>(false);
+  const [visibleMeanings, setVisibleMeanings] = useState<Set<number | string>>(new Set());
+  const [showAllMeanings, setShowAllMeanings] = useState<boolean>(false);
 
   const fetchWords = React.useCallback(async () => {
     if (!user) return;
@@ -74,14 +75,14 @@ function App() {
   }, [user, fetchWords]);
 
 
-  const saveToLocalStorage = (wordList) => {
+  const saveToLocalStorage = (wordList: VocabularyWord[]): void => {
     if (user) {
       localStorage.setItem(`vocabularyWords_${user.id}`, JSON.stringify(wordList));
     }
   };
 
-  const addWord = async () => {
-    if (newWord.trim() && newMeaning.trim()) {
+  const addWord = async (): Promise<void> => {
+    if (newWord.trim() && newMeaning.trim() && user) {
       try {
         setLoading(true);
         const { error } = await supabase
@@ -96,7 +97,7 @@ function App() {
           .select();
 
         if (error) {
-          const newWordObj = {
+          const newWordObj: VocabularyWord = {
             id: Date.now(),
             word: newWord.trim(),
             meaning: newMeaning.trim(),
@@ -112,7 +113,7 @@ function App() {
         setNewWord('');
         setNewMeaning('');
       } catch (error) {
-        const newWordObj = {
+        const newWordObj: VocabularyWord = {
           id: Date.now(),
           word: newWord.trim(),
           meaning: newMeaning.trim(),
@@ -129,7 +130,7 @@ function App() {
     }
   };
 
-  const lookupDictionary = async () => {
+  const lookupDictionary = async (): Promise<void> => {
     if (!newWord.trim()) {
       alert('英単語を入力してください');
       return;
@@ -152,13 +153,13 @@ function App() {
         setDictionaryResult('辞書の検索に失敗しました');
       }
     } catch (error) {
-      setDictionaryResult('辞書の検索中にエラーが発生しました: ' + error.message);
+      setDictionaryResult('辞書の検索中にエラーが発生しました: ' + (error instanceof Error ? error.message : String(error)));
     } finally {
       setDictionaryLoading(false);
     }
   };
 
-  const handleAuth = async (e) => {
+  const handleAuth = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     if (!email || !password) {
       alert('メールアドレスとパスワードを入力してください');
@@ -198,7 +199,7 @@ function App() {
     }
   };
 
-  const handleLogout = async () => {
+  const handleLogout = async (): Promise<void> => {
     try {
       await supabase.auth.signOut();
       setWords([]);
@@ -207,7 +208,7 @@ function App() {
     }
   };
 
-  const deleteWord = async (id) => {
+  const deleteWord = async (id: number | string): Promise<void> => {
     try {
       setLoading(true);
       const { error } = await supabase
@@ -231,13 +232,13 @@ function App() {
     }
   };
 
-  const openChatGPT = (word) => {
+  const openChatGPT = (word: string): void => {
     const prompt = encodeURIComponent(`${word}を使った英文例をください`);
     const chatgptUrl = `https://chat.openai.com/?q=${prompt}`;
     window.open(chatgptUrl, '_blank');
   };
 
-  const toggleMeaning = (wordId) => {
+  const toggleMeaning = (wordId: number | string): void => {
     setVisibleMeanings(prev => {
       const newSet = new Set(prev);
       if (newSet.has(wordId)) {
@@ -249,7 +250,7 @@ function App() {
     });
   };
 
-  const toggleAllMeanings = () => {
+  const toggleAllMeanings = (): void => {
     if (showAllMeanings) {
       setVisibleMeanings(new Set());
       setShowAllMeanings(false);
@@ -381,7 +382,7 @@ function App() {
                   placeholder="英単語を入力"
                   value={newWord}
                   onChange={(e) => setNewWord(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && addWord()}
+                  onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && addWord()}
                 />
                 <button 
                   onClick={lookupDictionary} 
@@ -410,7 +411,7 @@ function App() {
                 placeholder="意味を入力"
                 value={newMeaning}
                 onChange={(e) => setNewMeaning(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && addWord()}
+                onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && addWord()}
               />
               <button onClick={addWord} disabled={loading}>
                 {loading ? '保存中...' : '登録'}
@@ -436,7 +437,7 @@ function App() {
               <p>まだ単語が登録されていません。</p>
             ) : (
               <div className="word-list">
-                {words.map((word) => (
+                {words.map((word: VocabularyWord) => (
                   <div key={word.id} className="word-card">
                     <div className="word-content">
                       <h3 
@@ -448,7 +449,7 @@ function App() {
                       {visibleMeanings.has(word.id) && (
                         <p className="word-meaning">{word.meaning}</p>
                       )}
-                      <small>登録日: {word.dateAdded || new Date(word.date_added).toLocaleDateString()}</small>
+                      <small>登録日: {word.dateAdded || (word.date_added ? new Date(word.date_added).toLocaleDateString() : '')}</small>
                     </div>
                     <div className="word-actions">
                       <button 
