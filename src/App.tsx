@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 import { supabase } from './supabaseClient';
-import type { VocabularyWord, User, AuthMode } from './types';
+import type { VocabularyWord, User } from './types';
 import { useVocabularyWords } from './hooks/useVocabularyWords';
+import { AuthComponent } from './components/AuthComponent';
 
 function App(): React.JSX.Element {
   const [newWord, setNewWord] = useState<string>('');
@@ -13,10 +14,6 @@ function App(): React.JSX.Element {
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState<boolean>(true);
   const [showAuth, setShowAuth] = useState<boolean>(false);
-  const [authMode, setAuthMode] = useState<AuthMode>('login');
-  const [email, setEmail] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
-  const [showTooltip, setShowTooltip] = useState<boolean>(false);
   const [visibleMeanings, setVisibleMeanings] = useState<Set<number | string>>(
     new Set()
   );
@@ -93,50 +90,6 @@ function App(): React.JSX.Element {
     }
   };
 
-  const handleAuth = async (
-    e: React.FormEvent<HTMLFormElement>
-  ): Promise<void> => {
-    e.preventDefault();
-    if (!email || !password) {
-      alert('メールアドレスとパスワードを入力してください');
-      return;
-    }
-
-    try {
-      setAuthLoading(true);
-      let result;
-
-      if (authMode === 'login') {
-        result = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-      } else {
-        result = await supabase.auth.signUp({
-          email,
-          password,
-        });
-      }
-
-      if (result.error) {
-        alert(result.error.message);
-      } else {
-        setShowAuth(false);
-        setEmail('');
-        setPassword('');
-        if (authMode === 'signup') {
-          alert(
-            '確認メールを送信しました。メールを確認してアカウントを有効化してください。'
-          );
-        }
-      }
-    } catch (error) {
-      alert('認証エラーが発生しました');
-    } finally {
-      setAuthLoading(false);
-    }
-  };
-
   const handleLogout = async (): Promise<void> => {
     try {
       await supabase.auth.signOut();
@@ -191,72 +144,7 @@ function App(): React.JSX.Element {
       <div className='App'>
         <header className='App-header'>
           <h1>英単語学習アプリ</h1>
-
-          {!showAuth ? (
-            <div className='auth-welcome'>
-              <p>英単語とその意味を登録・管理できる学習アプリです</p>
-              <button onClick={() => setShowAuth(true)} className='auth-btn'>
-                ログイン / サインアップ
-              </button>
-            </div>
-          ) : (
-            <div className='auth-form'>
-              <h2>{authMode === 'login' ? 'ログイン' : 'サインアップ'}</h2>
-              <form onSubmit={handleAuth}>
-                <input
-                  type='email'
-                  placeholder='メールアドレス'
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-                <input
-                  type='password'
-                  placeholder='パスワード'
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-                <button type='submit' disabled={authLoading}>
-                  {authLoading
-                    ? '処理中...'
-                    : authMode === 'login'
-                    ? 'ログイン'
-                    : 'サインアップ'}
-                </button>
-              </form>
-
-              <div className='auth-switch'>
-                {authMode === 'login' ? (
-                  <div className='tooltip-container'>
-                    <button
-                      className='link-btn disabled'
-                      disabled
-                      onMouseEnter={() => setShowTooltip(true)}
-                      onMouseLeave={() => setShowTooltip(false)}
-                    >
-                      アカウントを作成
-                    </button>
-                    {showTooltip && (
-                      <div className='tooltip'>
-                        現在、新規ユーザーの登録を一時的に停止しております
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setAuthMode('login')}
-                    className='link-btn'
-                  >
-                    ログインに戻る
-                  </button>
-                )}
-                <button onClick={() => setShowAuth(false)} className='link-btn'>
-                  戻る
-                </button>
-              </div>
-            </div>
-          )}
+          <AuthComponent showAuth={showAuth} onToggleAuth={setShowAuth} />
         </header>
       </div>
     );
