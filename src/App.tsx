@@ -3,14 +3,13 @@ import './App.css';
 import { supabase } from './supabaseClient';
 import type { VocabularyWord, User } from './types';
 import { useVocabularyWords } from './hooks/useVocabularyWords';
+import { useDictionary } from './hooks/useDictionary';
 import { AuthComponent } from './components/AuthComponent';
 
 function App(): React.JSX.Element {
   const [newWord, setNewWord] = useState<string>('');
   const [newMeaning, setNewMeaning] = useState<string>('');
   const [showReview, setShowReview] = useState<boolean>(false);
-  const [dictionaryLoading, setDictionaryLoading] = useState<boolean>(false);
-  const [dictionaryResult, setDictionaryResult] = useState<string>('');
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState<boolean>(true);
   const [showAuth, setShowAuth] = useState<boolean>(false);
@@ -27,6 +26,13 @@ function App(): React.JSX.Element {
     deleteWord: deleteVocabularyWord,
     setWords,
   } = useVocabularyWords(user);
+
+  // 辞書検索機能のカスタムフック
+  const {
+    loading: dictionaryLoading,
+    result: dictionaryResult,
+    lookupDictionary,
+  } = useDictionary();
 
   useEffect(() => {
     // 認証状態を監視
@@ -52,42 +58,8 @@ function App(): React.JSX.Element {
     setNewMeaning('');
   };
 
-  const lookupDictionary = async (): Promise<void> => {
-    if (!newWord.trim()) {
-      alert('英単語を入力してください');
-      return;
-    }
-
-    try {
-      setDictionaryLoading(true);
-      // CORSプロキシを使用してAPIにアクセス
-      const response = await fetch(
-        `https://api.allorigins.win/get?url=${encodeURIComponent(
-          `https://api.excelapi.org/dictionary/enja?word=${encodeURIComponent(
-            newWord.trim()
-          )}`
-        )}`
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        const meaning = data.contents;
-        if (meaning && meaning.trim()) {
-          setDictionaryResult(meaning.trim());
-        } else {
-          setDictionaryResult('辞書に登録されていない単語です');
-        }
-      } else {
-        setDictionaryResult('辞書の検索に失敗しました');
-      }
-    } catch (error) {
-      setDictionaryResult(
-        '辞書の検索中にエラーが発生しました: ' +
-          (error instanceof Error ? error.message : String(error))
-      );
-    } finally {
-      setDictionaryLoading(false);
-    }
+  const handleLookupDictionary = async (): Promise<void> => {
+    await lookupDictionary(newWord);
   };
 
   const handleLogout = async (): Promise<void> => {
@@ -193,7 +165,7 @@ function App(): React.JSX.Element {
                   }
                 />
                 <button
-                  onClick={lookupDictionary}
+                  onClick={handleLookupDictionary}
                   disabled={dictionaryLoading || !newWord.trim()}
                   className='dictionary-btn'
                 >
