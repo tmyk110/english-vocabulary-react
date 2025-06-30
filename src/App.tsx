@@ -2,13 +2,12 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 import { supabase } from './supabaseClient';
 import type { VocabularyWord, User, AuthMode } from './types';
+import { useVocabularyWords } from './hooks/useVocabularyWords';
 
 function App(): React.JSX.Element {
-  const [words, setWords] = useState<VocabularyWord[]>([]);
   const [newWord, setNewWord] = useState<string>('');
   const [newMeaning, setNewMeaning] = useState<string>('');
   const [showReview, setShowReview] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(false);
   const [dictionaryLoading, setDictionaryLoading] = useState<boolean>(false);
   const [dictionaryResult, setDictionaryResult] = useState<string>('');
   const [user, setUser] = useState<User | null>(null);
@@ -18,46 +17,28 @@ function App(): React.JSX.Element {
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [showTooltip, setShowTooltip] = useState<boolean>(false);
-  const [visibleMeanings, setVisibleMeanings] = useState<Set<number | string>>(new Set());
+  const [visibleMeanings, setVisibleMeanings] = useState<Set<number | string>>(
+    new Set()
+  );
   const [showAllMeanings, setShowAllMeanings] = useState<boolean>(false);
 
-  const fetchWords = React.useCallback(async () => {
-    if (!user) return;
-    
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('vocabulary_words')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('date_added', { ascending: false });
-
-      if (error) {
-        const savedWords = localStorage.getItem(`vocabularyWords_${user.id}`);
-        if (savedWords) {
-          setWords(JSON.parse(savedWords));
-        }
-      } else {
-        setWords(data);
-      }
-    } catch (error) {
-      const savedWords = localStorage.getItem(`vocabularyWords_${user.id}`);
-      if (savedWords) {
-        setWords(JSON.parse(savedWords));
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [user]);
+  // カスタムフックを使用して単語関連の状態と操作を管理
+  const {
+    words,
+    loading,
+    addWord: addVocabularyWord,
+    deleteWord: deleteVocabularyWord,
+    setWords,
+  } = useVocabularyWords(user);
 
   useEffect(() => {
     // 認証状態を監視
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user ?? null);
-        setAuthLoading(false);
-      }
-    );
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+      setAuthLoading(false);
+    });
 
     // 初期認証状態をチェック
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -68,66 +49,10 @@ function App(): React.JSX.Element {
     return () => subscription.unsubscribe();
   }, []);
 
-  useEffect(() => {
-    if (user) {
-      fetchWords();
-    }
-  }, [user, fetchWords]);
-
-
-  const saveToLocalStorage = (wordList: VocabularyWord[]): void => {
-    if (user) {
-      localStorage.setItem(`vocabularyWords_${user.id}`, JSON.stringify(wordList));
-    }
-  };
-
-  const addWord = async (): Promise<void> => {
-    if (newWord.trim() && newMeaning.trim() && user) {
-      try {
-        setLoading(true);
-        const { error } = await supabase
-          .from('vocabulary_words')
-          .insert([
-            {
-              word: newWord.trim(),
-              meaning: newMeaning.trim(),
-              user_id: user.id
-            }
-          ])
-          .select();
-
-        if (error) {
-          const newWordObj: VocabularyWord = {
-            id: Date.now(),
-            word: newWord.trim(),
-            meaning: newMeaning.trim(),
-            dateAdded: new Date().toLocaleDateString()
-          };
-          const updatedWords = [...words, newWordObj];
-          setWords(updatedWords);
-          saveToLocalStorage(updatedWords);
-        } else {
-          await fetchWords();
-        }
-        
-        setNewWord('');
-        setNewMeaning('');
-      } catch (error) {
-        const newWordObj: VocabularyWord = {
-          id: Date.now(),
-          word: newWord.trim(),
-          meaning: newMeaning.trim(),
-          dateAdded: new Date().toLocaleDateString()
-        };
-        const updatedWords = [...words, newWordObj];
-        setWords(updatedWords);
-        saveToLocalStorage(updatedWords);
-        setNewWord('');
-        setNewMeaning('');
-      } finally {
-        setLoading(false);
-      }
-    }
+  const handleAddWord = async (): Promise<void> => {
+    await addVocabularyWord(newWord, newMeaning);
+    setNewWord('');
+    setNewMeaning('');
   };
 
   const lookupDictionary = async (): Promise<void> => {
@@ -139,8 +64,14 @@ function App(): React.JSX.Element {
     try {
       setDictionaryLoading(true);
       // CORSプロキシを使用してAPIにアクセス
-      const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(`https://api.excelapi.org/dictionary/enja?word=${encodeURIComponent(newWord.trim())}`)}`);
-      
+      const response = await fetch(
+        `https://api.allorigins.win/get?url=${encodeURIComponent(
+          `https://api.excelapi.org/dictionary/enja?word=${encodeURIComponent(
+            newWord.trim()
+          )}`
+        )}`
+      );
+
       if (response.ok) {
         const data = await response.json();
         const meaning = data.contents;
@@ -153,13 +84,18 @@ function App(): React.JSX.Element {
         setDictionaryResult('辞書の検索に失敗しました');
       }
     } catch (error) {
-      setDictionaryResult('辞書の検索中にエラーが発生しました: ' + (error instanceof Error ? error.message : String(error)));
+      setDictionaryResult(
+        '辞書の検索中にエラーが発生しました: ' +
+          (error instanceof Error ? error.message : String(error))
+      );
     } finally {
       setDictionaryLoading(false);
     }
   };
 
-  const handleAuth = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
+  const handleAuth = async (
+    e: React.FormEvent<HTMLFormElement>
+  ): Promise<void> => {
     e.preventDefault();
     if (!email || !password) {
       alert('メールアドレスとパスワードを入力してください');
@@ -169,7 +105,7 @@ function App(): React.JSX.Element {
     try {
       setAuthLoading(true);
       let result;
-      
+
       if (authMode === 'login') {
         result = await supabase.auth.signInWithPassword({
           email,
@@ -189,7 +125,9 @@ function App(): React.JSX.Element {
         setEmail('');
         setPassword('');
         if (authMode === 'signup') {
-          alert('確認メールを送信しました。メールを確認してアカウントを有効化してください。');
+          alert(
+            '確認メールを送信しました。メールを確認してアカウントを有効化してください。'
+          );
         }
       }
     } catch (error) {
@@ -208,30 +146,6 @@ function App(): React.JSX.Element {
     }
   };
 
-  const deleteWord = async (id: number | string): Promise<void> => {
-    try {
-      setLoading(true);
-      const { error } = await supabase
-        .from('vocabulary_words')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
-        const updatedWords = words.filter(word => word.id !== id);
-        setWords(updatedWords);
-        saveToLocalStorage(updatedWords);
-      } else {
-        await fetchWords();
-      }
-    } catch (error) {
-      const updatedWords = words.filter(word => word.id !== id);
-      setWords(updatedWords);
-      saveToLocalStorage(updatedWords);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const openChatGPT = (word: string): void => {
     const prompt = encodeURIComponent(`${word}を使った英文例をください`);
     const chatgptUrl = `https://chat.openai.com/?q=${prompt}`;
@@ -239,7 +153,7 @@ function App(): React.JSX.Element {
   };
 
   const toggleMeaning = (wordId: number | string): void => {
-    setVisibleMeanings(prev => {
+    setVisibleMeanings((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(wordId)) {
         newSet.delete(wordId);
@@ -255,7 +169,7 @@ function App(): React.JSX.Element {
       setVisibleMeanings(new Set());
       setShowAllMeanings(false);
     } else {
-      const allWordIds = new Set(words.map(word => word.id));
+      const allWordIds = new Set(words.map((word) => word.id));
       setVisibleMeanings(allWordIds);
       setShowAllMeanings(true);
     }
@@ -263,8 +177,8 @@ function App(): React.JSX.Element {
 
   if (authLoading) {
     return (
-      <div className="App">
-        <header className="App-header">
+      <div className='App'>
+        <header className='App-header'>
           <h1>英単語学習アプリ</h1>
           <p>読み込み中...</p>
         </header>
@@ -274,45 +188,49 @@ function App(): React.JSX.Element {
 
   if (!user) {
     return (
-      <div className="App">
-        <header className="App-header">
+      <div className='App'>
+        <header className='App-header'>
           <h1>英単語学習アプリ</h1>
-          
+
           {!showAuth ? (
-            <div className="auth-welcome">
+            <div className='auth-welcome'>
               <p>英単語とその意味を登録・管理できる学習アプリです</p>
-              <button onClick={() => setShowAuth(true)} className="auth-btn">
+              <button onClick={() => setShowAuth(true)} className='auth-btn'>
                 ログイン / サインアップ
               </button>
             </div>
           ) : (
-            <div className="auth-form">
+            <div className='auth-form'>
               <h2>{authMode === 'login' ? 'ログイン' : 'サインアップ'}</h2>
               <form onSubmit={handleAuth}>
                 <input
-                  type="email"
-                  placeholder="メールアドレス"
+                  type='email'
+                  placeholder='メールアドレス'
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
                 />
                 <input
-                  type="password"
-                  placeholder="パスワード"
+                  type='password'
+                  placeholder='パスワード'
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
-                <button type="submit" disabled={authLoading}>
-                  {authLoading ? '処理中...' : (authMode === 'login' ? 'ログイン' : 'サインアップ')}
+                <button type='submit' disabled={authLoading}>
+                  {authLoading
+                    ? '処理中...'
+                    : authMode === 'login'
+                    ? 'ログイン'
+                    : 'サインアップ'}
                 </button>
               </form>
-              
-              <div className="auth-switch">
+
+              <div className='auth-switch'>
                 {authMode === 'login' ? (
-                  <div className="tooltip-container">
+                  <div className='tooltip-container'>
                     <button
-                      className="link-btn disabled"
+                      className='link-btn disabled'
                       disabled
                       onMouseEnter={() => setShowTooltip(true)}
                       onMouseLeave={() => setShowTooltip(false)}
@@ -320,7 +238,7 @@ function App(): React.JSX.Element {
                       アカウントを作成
                     </button>
                     {showTooltip && (
-                      <div className="tooltip">
+                      <div className='tooltip'>
                         現在、新規ユーザーの登録を一時的に停止しております
                       </div>
                     )}
@@ -328,12 +246,12 @@ function App(): React.JSX.Element {
                 ) : (
                   <button
                     onClick={() => setAuthMode('login')}
-                    className="link-btn"
+                    className='link-btn'
                   >
                     ログインに戻る
                   </button>
                 )}
-                <button onClick={() => setShowAuth(false)} className="link-btn">
+                <button onClick={() => setShowAuth(false)} className='link-btn'>
                   戻る
                 </button>
               </div>
@@ -345,26 +263,26 @@ function App(): React.JSX.Element {
   }
 
   return (
-    <div className="App">
-      <header className="App-header">
-        <div className="header-top">
+    <div className='App'>
+      <header className='App-header'>
+        <div className='header-top'>
           <h1>英単語学習アプリ</h1>
-          <div className="user-info">
+          <div className='user-info'>
             <span>{user.email}</span>
-            <button onClick={handleLogout} className="logout-btn">
+            <button onClick={handleLogout} className='logout-btn'>
               ログアウト
             </button>
           </div>
         </div>
-        
-        <div className="nav-buttons">
-          <button 
+
+        <div className='nav-buttons'>
+          <button
             onClick={() => setShowReview(false)}
             className={!showReview ? 'active' : ''}
           >
             単語登録
           </button>
-          <button 
+          <button
             onClick={() => setShowReview(true)}
             className={showReview ? 'active' : ''}
           >
@@ -373,60 +291,61 @@ function App(): React.JSX.Element {
         </div>
 
         {!showReview ? (
-          <div className="word-input-section">
+          <div className='word-input-section'>
             <h2>新しい単語を登録</h2>
-            <div className="input-group">
-              <div className="word-input-container">
+            <div className='input-group'>
+              <div className='word-input-container'>
                 <input
-                  type="text"
-                  placeholder="英単語を入力"
+                  type='text'
+                  placeholder='英単語を入力'
                   value={newWord}
                   onChange={(e) => setNewWord(e.target.value)}
-                  onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && addWord()}
+                  onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) =>
+                    e.key === 'Enter' && handleAddWord()
+                  }
                 />
-                <button 
-                  onClick={lookupDictionary} 
+                <button
+                  onClick={lookupDictionary}
                   disabled={dictionaryLoading || !newWord.trim()}
-                  className="dictionary-btn"
+                  className='dictionary-btn'
                 >
                   {dictionaryLoading ? '検索中...' : '辞書で調べる'}
                 </button>
               </div>
-              
+
               {dictionaryResult && (
-                <div className="dictionary-result">
+                <div className='dictionary-result'>
                   <h4>辞書の結果:</h4>
                   <p>{dictionaryResult}</p>
-                  <button 
+                  <button
                     onClick={() => setNewMeaning(dictionaryResult)}
-                    className="use-result-btn"
+                    className='use-result-btn'
                   >
                     この意味を使用
                   </button>
                 </div>
               )}
-              
+
               <input
-                type="text"
-                placeholder="意味を入力"
+                type='text'
+                placeholder='意味を入力'
                 value={newMeaning}
                 onChange={(e) => setNewMeaning(e.target.value)}
-                onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && addWord()}
+                onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) =>
+                  e.key === 'Enter' && handleAddWord()
+                }
               />
-              <button onClick={addWord} disabled={loading}>
+              <button onClick={handleAddWord} disabled={loading}>
                 {loading ? '保存中...' : '登録'}
               </button>
             </div>
           </div>
         ) : (
-          <div className="word-list-section">
-            <div className="word-list-header">
+          <div className='word-list-section'>
+            <div className='word-list-header'>
               <h2>登録済み単語一覧 ({words.length}個)</h2>
               {words.length > 0 && (
-                <button 
-                  onClick={toggleAllMeanings}
-                  className="bulk-toggle-btn"
-                >
+                <button onClick={toggleAllMeanings} className='bulk-toggle-btn'>
                   {showAllMeanings ? '全て隠す' : '全て表示'}
                 </button>
               )}
@@ -436,37 +355,45 @@ function App(): React.JSX.Element {
             ) : words.length === 0 ? (
               <p>まだ単語が登録されていません。</p>
             ) : (
-              <div className="word-list">
+              <div className='word-list'>
                 {words.map((word: VocabularyWord) => (
-                  <div key={word.id} className="word-card">
-                    <div className="word-content">
-                      <h3 
+                  <div key={word.id} className='word-card'>
+                    <div className='word-content'>
+                      <h3
                         onClick={() => toggleMeaning(word.id)}
-                        className="word-title clickable"
+                        className='word-title clickable'
                       >
                         {word.word}
                       </h3>
                       {visibleMeanings.has(word.id) && (
-                        <p className="word-meaning">{word.meaning}</p>
+                        <p className='word-meaning'>{word.meaning}</p>
                       )}
-                      <small>登録日: {word.dateAdded || (word.date_added ? new Date(word.date_added).toLocaleDateString() : '')}</small>
+                      <small>
+                        登録日:{' '}
+                        {word.dateAdded ||
+                          (word.date_added
+                            ? new Date(word.date_added).toLocaleDateString()
+                            : '')}
+                      </small>
                     </div>
-                    <div className="word-actions">
-                      <button 
+                    <div className='word-actions'>
+                      <button
                         onClick={() => toggleMeaning(word.id)}
-                        className="meaning-toggle-btn"
+                        className='meaning-toggle-btn'
                       >
-                        {visibleMeanings.has(word.id) ? '意味を隠す' : '意味を表示'}
+                        {visibleMeanings.has(word.id)
+                          ? '意味を隠す'
+                          : '意味を表示'}
                       </button>
-                      <button 
+                      <button
                         onClick={() => openChatGPT(word.word)}
-                        className="chatgpt-btn"
+                        className='chatgpt-btn'
                       >
                         ChatGPTで学習
                       </button>
-                      <button 
-                        onClick={() => deleteWord(word.id)}
-                        className="delete-btn"
+                      <button
+                        onClick={() => deleteVocabularyWord(word.id)}
+                        className='delete-btn'
                       >
                         削除
                       </button>
