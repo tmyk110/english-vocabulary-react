@@ -15,7 +15,7 @@ export const useVocabularyWords = (
   user: User | null
 ): UseVocabularyWordsReturn => {
   const [words, setWords] = useState<VocabularyWord[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState(false);
 
   const saveToLocalStorage = useCallback(
     (wordList: VocabularyWord[]): void => {

@@ -1,8 +1,8 @@
 import { useState } from 'react';
 
 export const useDictionary = () => {
-  const [loading, setLoading] = useState<boolean>(false);
-  const [result, setResult] = useState<string>('');
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState('');
 
   const lookupDictionary = async (word: string): Promise<void> => {
     if (!word.trim()) {

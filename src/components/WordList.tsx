@@ -15,7 +15,7 @@ export const WordList: React.FC<WordListProps> = ({
   const [visibleMeanings, setVisibleMeanings] = useState<Set<number | string>>(
     new Set()
   );
-  const [showAllMeanings, setShowAllMeanings] = useState<boolean>(false);
+  const [showAllMeanings, setShowAllMeanings] = useState(false);
 
   const openChatGPT = (word: string): void => {
     const prompt = encodeURIComponent(`${word}を使った英文例をください`);
@@ -87,9 +87,7 @@ export const WordList: React.FC<WordListProps> = ({
                   onClick={() => toggleMeaning(word.id)}
                   className='meaning-toggle-btn'
                 >
-                  {visibleMeanings.has(word.id)
-                    ? '意味を隠す'
-                    : '意味を表示'}
+                  {visibleMeanings.has(word.id) ? '意味を隠す' : '意味を表示'}
                 </button>
                 <button
                   onClick={() => openChatGPT(word.word)}

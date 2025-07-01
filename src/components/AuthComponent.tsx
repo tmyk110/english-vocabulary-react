@@ -11,11 +11,11 @@ export const AuthComponent: React.FC<AuthComponentProps> = ({
   showAuth,
   onToggleAuth,
 }) => {
-  const [authLoading, setAuthLoading] = useState<boolean>(false);
+  const [authLoading, setAuthLoading] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>('login');
-  const [email, setEmail] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
-  const [showTooltip, setShowTooltip] = useState<boolean>(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showTooltip, setShowTooltip] = useState(false);
 
   const handleAuth = async (
     e: React.FormEvent<HTMLFormElement>

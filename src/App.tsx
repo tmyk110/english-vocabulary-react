@@ -8,10 +8,10 @@ import { WordRegistration } from './components/WordRegistration';
 import { WordList } from './components/WordList';
 
 function App(): React.JSX.Element {
-  const [showReview, setShowReview] = useState<boolean>(false);
+  const [showReview, setShowReview] = useState(false);
   const [user, setUser] = useState<User | null>(null);
-  const [authLoading, setAuthLoading] = useState<boolean>(true);
-  const [showAuth, setShowAuth] = useState<boolean>(false);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [showAuth, setShowAuth] = useState(false);
 
   // カスタムフックを使用して単語関連の状態と操作を管理
   const {

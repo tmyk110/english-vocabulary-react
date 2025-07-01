@@ -10,8 +10,8 @@ export const WordRegistration: React.FC<WordRegistrationProps> = ({
   onAddWord,
   loading,
 }) => {
-  const [newWord, setNewWord] = useState<string>('');
-  const [newMeaning, setNewMeaning] = useState<string>('');
+  const [newWord, setNewWord] = useState('');
+  const [newMeaning, setNewMeaning] = useState('');
 
   const {
     loading: dictionaryLoading,
