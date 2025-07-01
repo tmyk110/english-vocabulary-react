@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useDictionary } from '../hooks/useDictionary';
+import { useSpeechSynthesis } from '../hooks/useSpeechSynthesis';
 
 interface WordRegistrationProps {
   onAddWord: (word: string, meaning: string) => Promise<void>;
@@ -18,6 +19,8 @@ export const WordRegistration: React.FC<WordRegistrationProps> = ({
     result: dictionaryResult,
     lookupDictionary,
   } = useDictionary();
+
+  const { speak, isSpeaking, isSupported } = useSpeechSynthesis();
 
   const handleAddWord = async (): Promise<void> => {
     await onAddWord(newWord, newMeaning);
@@ -50,6 +53,15 @@ export const WordRegistration: React.FC<WordRegistrationProps> = ({
           >
             {dictionaryLoading ? '検索中...' : '辞書で調べる'}
           </button>
+          {isSupported && (
+            <button
+              onClick={() => speak(newWord)}
+              disabled={isSpeaking || !newWord.trim()}
+              className='speak-btn'
+            >
+              {isSpeaking ? '🔊' : '🔉'}
+            </button>
+          )}
         </div>
 
         {dictionaryResult && (

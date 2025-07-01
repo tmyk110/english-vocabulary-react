@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { VocabularyWord } from '../types';
+import { useSpeechSynthesis } from '../hooks/useSpeechSynthesis';
 
 interface WordListProps {
   words: VocabularyWord[];
@@ -16,6 +17,7 @@ export const WordList: React.FC<WordListProps> = ({
     new Set()
   );
   const [showAllMeanings, setShowAllMeanings] = useState(false);
+  const { speak, isSpeaking, isSupported } = useSpeechSynthesis();
 
   const openChatGPT = (word: string): void => {
     const prompt = encodeURIComponent(`${word}を使った英文例をください`);
@@ -89,6 +91,15 @@ export const WordList: React.FC<WordListProps> = ({
                 >
                   {visibleMeanings.has(word.id) ? '意味を隠す' : '意味を表示'}
                 </button>
+                {isSupported && (
+                  <button
+                    onClick={() => speak(word.word)}
+                    disabled={isSpeaking}
+                    className='speak-btn'
+                  >
+                    {isSpeaking ? '🔊' : '🔉'}
+                  </button>
+                )}
                 <button
                   onClick={() => openChatGPT(word.word)}
                   className='chatgpt-btn'
