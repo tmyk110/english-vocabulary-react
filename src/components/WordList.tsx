@@ -79,7 +79,7 @@ export const WordList: React.FC<WordListProps> = ({
         alignItems='center'
         mb={3}
       >
-        <Typography variant='h4' component='h2'>
+        <Typography variant='h4' component='h2' sx={{ color: 'white' }}>
           登録済み単語一覧
           <Chip
             label={`${words.length}個`}
@@ -93,6 +93,14 @@ export const WordList: React.FC<WordListProps> = ({
             variant='outlined'
             startIcon={showAllMeanings ? <VisibilityOff /> : <Visibility />}
             onClick={toggleAllMeanings}
+            sx={{
+              color: 'white',
+              borderColor: 'white',
+              '&:hover': {
+                borderColor: 'rgba(255,255,255,0.8)',
+                backgroundColor: 'rgba(255,255,255,0.1)',
+              },
+            }}
           >
             {showAllMeanings ? '全て隠す' : '全て表示'}
           </Button>
@@ -107,7 +115,7 @@ export const WordList: React.FC<WordListProps> = ({
           minHeight='200px'
         >
           <CircularProgress />
-          <Typography variant='body1' sx={{ ml: 2 }}>
+          <Typography variant='body1' sx={{ ml: 2, color: 'white' }}>
             読み込み中...
           </Typography>
         </Box>
@@ -119,10 +127,10 @@ export const WordList: React.FC<WordListProps> = ({
           minHeight='200px'
           flexDirection='column'
         >
-          <Typography variant='h6' color='text.secondary'>
+          <Typography variant='h6' sx={{ color: 'white' }}>
             まだ単語が登録されていません
           </Typography>
-          <Typography variant='body2' color='text.secondary' sx={{ mt: 1 }}>
+          <Typography variant='body2' sx={{ mt: 1, color: 'rgba(255,255,255,0.8)' }}>
             「単語登録」タブから新しい単語を追加してください
           </Typography>
         </Box>

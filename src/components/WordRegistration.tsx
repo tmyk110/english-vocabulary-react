@@ -61,7 +61,7 @@ export const WordRegistration: React.FC<WordRegistrationProps> = ({
 
   return (
     <Box maxWidth="md" mx="auto">
-      <Typography variant="h4" component="h2" gutterBottom>
+      <Typography variant="h4" component="h2" gutterBottom sx={{ color: 'white' }}>
         新しい単語を登録
       </Typography>
       

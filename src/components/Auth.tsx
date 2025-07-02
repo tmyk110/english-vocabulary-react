@@ -94,7 +94,7 @@ export const Auth: React.FC<AuthProps> = ({
   if (!showAuth) {
     return (
       <Box textAlign='center' sx={{ mt: 4 }}>
-        <Typography variant='h6' paragraph color='text.secondary'>
+        <Typography variant='h6' paragraph sx={{ color: 'rgba(255,255,255,0.9)' }}>
           英単語とその意味を登録・管理できる学習アプリです
         </Typography>
         <Button

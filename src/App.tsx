@@ -99,7 +99,10 @@ function App(): React.JSX.Element {
           alignItems='center'
           minHeight='100vh'
           flexDirection='column'
-          sx={{ bgcolor: 'background.default' }}
+          sx={{ 
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            color: 'white'
+          }}
         >
           <CircularProgress />
           <Typography variant='h6' sx={{ mt: 2 }}>
@@ -107,7 +110,10 @@ function App(): React.JSX.Element {
           </Typography>
         </Box>
       ) : !user ? (
-        <Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
+        <Box sx={{ 
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
+          minHeight: '100vh' 
+        }}>
           <Container maxWidth='md'>
             <Box
               display='flex'
@@ -116,7 +122,7 @@ function App(): React.JSX.Element {
               justifyContent='center'
               minHeight='100vh'
             >
-              <Typography variant='h3' component='h1' gutterBottom>
+              <Typography variant='h3' component='h1' gutterBottom sx={{ color: 'white' }}>
                 英単語学習アプリ
               </Typography>
               <Auth showAuth={showAuth} onToggleAuth={setShowAuth} />
@@ -124,14 +130,17 @@ function App(): React.JSX.Element {
           </Container>
         </Box>
       ) : (
-        <Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
-          <AppBar position='static'>
+        <Box sx={{ 
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
+          minHeight: '100vh' 
+        }}>
+          <AppBar position='static' sx={{ backgroundColor: 'transparent', boxShadow: 'none' }}>
             <Toolbar>
-              <Typography variant='h6' component='div' sx={{ flexGrow: 1 }}>
+              <Typography variant='h6' component='div' sx={{ flexGrow: 1, color: 'white' }}>
                 英単語学習アプリ
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Typography variant='body2' sx={{ mr: 1 }}>
+                <Typography variant='body2' sx={{ mr: 1, color: 'white' }}>
                   {user.email}
                 </Typography>
                 <IconButton
@@ -157,8 +166,22 @@ function App(): React.JSX.Element {
           </AppBar>
 
           <Container maxWidth='lg' sx={{ mt: 4, mb: 4 }}>
-            <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-              <Tabs value={showReview ? 1 : 0} onChange={handleTabChange}>
+            <Box sx={{ borderBottom: 1, borderColor: 'rgba(255,255,255,0.3)', mb: 3 }}>
+              <Tabs 
+                value={showReview ? 1 : 0} 
+                onChange={handleTabChange}
+                sx={{
+                  '& .MuiTab-root': {
+                    color: 'white',
+                    '&.Mui-selected': {
+                      color: 'white',
+                    },
+                  },
+                  '& .MuiTabs-indicator': {
+                    backgroundColor: 'white',
+                  },
+                }}
+              >
                 <Tab label='単語登録' />
                 <Tab label='単語一覧' />
               </Tabs>
