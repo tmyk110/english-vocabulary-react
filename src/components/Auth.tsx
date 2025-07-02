@@ -17,12 +17,12 @@ import { Login, PersonAdd } from '@mui/icons-material';
 import { supabase } from '../supabaseClient';
 import type { AuthMode } from '../types';
 
-interface AuthComponentProps {
+interface AuthProps {
   showAuth: boolean;
   onToggleAuth: (show: boolean) => void;
 }
 
-export const AuthComponent: React.FC<AuthComponentProps> = ({
+export const Auth: React.FC<AuthProps> = ({
   showAuth,
   onToggleAuth,
 }) => {

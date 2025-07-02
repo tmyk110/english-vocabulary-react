@@ -19,7 +19,7 @@ import { supabase } from './supabaseClient';
 import { theme } from './theme';
 import type { User } from './types';
 import { useVocabularyWords } from './hooks/useVocabularyWords';
-import { AuthComponent } from './components/AuthComponent';
+import { Auth } from './components/Auth';
 import { WordRegistration } from './components/WordRegistration';
 import { WordList } from './components/WordList';
 
@@ -119,7 +119,7 @@ function App(): React.JSX.Element {
               <Typography variant='h3' component='h1' gutterBottom>
                 英単語学習アプリ
               </Typography>
-              <AuthComponent showAuth={showAuth} onToggleAuth={setShowAuth} />
+              <Auth showAuth={showAuth} onToggleAuth={setShowAuth} />
             </Box>
           </Container>
         </Box>
