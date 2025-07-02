@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   ThemeProvider,
-  createTheme,
   CssBaseline,
   AppBar,
   Toolbar,
@@ -17,64 +16,12 @@ import {
 } from '@mui/material';
 import { AccountCircle, Logout } from '@mui/icons-material';
 import { supabase } from './supabaseClient';
+import { theme } from './theme';
 import type { User } from './types';
 import { useVocabularyWords } from './hooks/useVocabularyWords';
 import { AuthComponent } from './components/AuthComponent';
 import { WordRegistration } from './components/WordRegistration';
 import { WordList } from './components/WordList';
-
-const theme = createTheme({
-  palette: {
-    mode: 'light',
-    primary: {
-      main: '#1976d2',
-    },
-    secondary: {
-      main: '#dc004e',
-    },
-    background: {
-      default: '#ffffff',
-      paper: '#ffffff',
-    },
-    text: {
-      primary: '#212121',
-      secondary: '#757575',
-    },
-  },
-  typography: {
-    h3: {
-      fontWeight: 600,
-    },
-    h4: {
-      fontWeight: 600,
-    },
-  },
-  components: {
-    MuiCard: {
-      styleOverrides: {
-        root: {
-          borderRadius: 16,
-        },
-      },
-    },
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          borderRadius: 12,
-        },
-      },
-    },
-    MuiTextField: {
-      styleOverrides: {
-        root: {
-          '& .MuiOutlinedInput-root': {
-            borderRadius: 12,
-          },
-        },
-      },
-    },
-  },
-});
 
 function App(): React.JSX.Element {
   const [showReview, setShowReview] = useState(false);
@@ -142,10 +89,10 @@ function App(): React.JSX.Element {
     setShowReview(newValue === 1);
   };
 
-  if (authLoading) {
-    return (
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
+  return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      {authLoading ? (
         <Box
           display='flex'
           justifyContent='center'
@@ -159,88 +106,76 @@ function App(): React.JSX.Element {
             読み込み中...
           </Typography>
         </Box>
-      </ThemeProvider>
-    );
-  }
-
-  if (!user) {
-    return (
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
+      ) : !user ? (
         <Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
-        <Container maxWidth='md'>
-          <Box
-            display='flex'
-            flexDirection='column'
-            alignItems='center'
-            justifyContent='center'
-            minHeight='100vh'
-          >
-            <Typography variant='h3' component='h1' gutterBottom>
-              英単語学習アプリ
-            </Typography>
-            <AuthComponent showAuth={showAuth} onToggleAuth={setShowAuth} />
-          </Box>
-        </Container>
-        </Box>
-      </ThemeProvider>
-    );
-  }
-
-  return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
-      <AppBar position='static'>
-        <Toolbar>
-          <Typography variant='h6' component='div' sx={{ flexGrow: 1 }}>
-            英単語学習アプリ
-          </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Typography variant='body2' sx={{ mr: 1 }}>
-              {user.email}
-            </Typography>
-            <IconButton
-              size='large'
-              edge='end'
-              color='inherit'
-              onClick={handleMenuOpen}
+          <Container maxWidth='md'>
+            <Box
+              display='flex'
+              flexDirection='column'
+              alignItems='center'
+              justifyContent='center'
+              minHeight='100vh'
             >
-              <AccountCircle />
-            </IconButton>
-            <Menu
-              anchorEl={anchorEl}
-              open={Boolean(anchorEl)}
-              onClose={handleMenuClose}
-            >
-              <MenuItem onClick={handleLogout}>
-                <Logout sx={{ mr: 1 }} />
-                ログアウト
-              </MenuItem>
-            </Menu>
-          </Box>
-        </Toolbar>
-      </AppBar>
-
-      <Container maxWidth='lg' sx={{ mt: 4, mb: 4 }}>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-          <Tabs value={showReview ? 1 : 0} onChange={handleTabChange}>
-            <Tab label='単語登録' />
-            <Tab label='単語一覧' />
-          </Tabs>
+              <Typography variant='h3' component='h1' gutterBottom>
+                英単語学習アプリ
+              </Typography>
+              <AuthComponent showAuth={showAuth} onToggleAuth={setShowAuth} />
+            </Box>
+          </Container>
         </Box>
+      ) : (
+        <Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
+          <AppBar position='static'>
+            <Toolbar>
+              <Typography variant='h6' component='div' sx={{ flexGrow: 1 }}>
+                英単語学習アプリ
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Typography variant='body2' sx={{ mr: 1 }}>
+                  {user.email}
+                </Typography>
+                <IconButton
+                  size='large'
+                  edge='end'
+                  color='inherit'
+                  onClick={handleMenuOpen}
+                >
+                  <AccountCircle />
+                </IconButton>
+                <Menu
+                  anchorEl={anchorEl}
+                  open={Boolean(anchorEl)}
+                  onClose={handleMenuClose}
+                >
+                  <MenuItem onClick={handleLogout}>
+                    <Logout sx={{ mr: 1 }} />
+                    ログアウト
+                  </MenuItem>
+                </Menu>
+              </Box>
+            </Toolbar>
+          </AppBar>
 
-        {!showReview ? (
-          <WordRegistration onAddWord={handleAddWord} loading={loading} />
-        ) : (
-          <WordList
-            words={words}
-            loading={loading}
-            onDeleteWord={deleteVocabularyWord}
-          />
-        )}
-      </Container>
-      </Box>
+          <Container maxWidth='lg' sx={{ mt: 4, mb: 4 }}>
+            <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+              <Tabs value={showReview ? 1 : 0} onChange={handleTabChange}>
+                <Tab label='単語登録' />
+                <Tab label='単語一覧' />
+              </Tabs>
+            </Box>
+
+            {!showReview ? (
+              <WordRegistration onAddWord={handleAddWord} loading={loading} />
+            ) : (
+              <WordList
+                words={words}
+                loading={loading}
+                onDeleteWord={deleteVocabularyWord}
+              />
+            )}
+          </Container>
+        </Box>
+      )}
     </ThemeProvider>
   );
 }
