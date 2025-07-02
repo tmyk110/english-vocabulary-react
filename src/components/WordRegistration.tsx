@@ -1,4 +1,23 @@
 import React, { useState } from 'react';
+import {
+  Box,
+  Card,
+  CardContent,
+  TextField,
+  Button,
+  Typography,
+  Paper,
+  Divider,
+  IconButton,
+  CircularProgress,
+  Stack
+} from '@mui/material';
+import {
+  VolumeUp,
+  Search,
+  Add,
+  ContentCopy
+} from '@mui/icons-material';
 import { useDictionary } from '../hooks/useDictionary';
 import { useSpeechSynthesis } from '../hooks/useSpeechSynthesis';
 
@@ -23,6 +42,7 @@ export const WordRegistration: React.FC<WordRegistrationProps> = ({
   const { speak, isSpeaking, isSupported } = useSpeechSynthesis();
 
   const handleAddWord = async (): Promise<void> => {
+    if (!newWord.trim() || !newMeaning.trim()) return;
     await onAddWord(newWord, newMeaning);
     setNewWord('');
     setNewMeaning('');
@@ -32,64 +52,106 @@ export const WordRegistration: React.FC<WordRegistrationProps> = ({
     await lookupDictionary(newWord);
   };
 
+  const handleKeyPress = (e: React.KeyboardEvent): void => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleAddWord();
+    }
+  };
+
   return (
-    <div className='word-input-section'>
-      <h2>新しい単語を登録</h2>
-      <div className='input-group'>
-        <div className='word-input-container'>
-          <input
-            type='text'
-            placeholder='英単語を入力'
-            value={newWord}
-            onChange={(e) => setNewWord(e.target.value)}
-            onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) =>
-              e.key === 'Enter' && handleAddWord()
-            }
-          />
-          <button
-            onClick={handleLookupDictionary}
-            disabled={dictionaryLoading || !newWord.trim()}
-            className='dictionary-btn'
-          >
-            {dictionaryLoading ? '検索中...' : '辞書で調べる'}
-          </button>
-          {isSupported && (
-            <button
-              onClick={() => speak(newWord)}
-              disabled={isSpeaking || !newWord.trim()}
-              className='speak-btn'
-            >
-              {isSpeaking ? '🔊' : '🔉'}
-            </button>
-          )}
-        </div>
+    <Box maxWidth="md" mx="auto">
+      <Typography variant="h4" component="h2" gutterBottom>
+        新しい単語を登録
+      </Typography>
+      
+      <Card elevation={2}>
+        <CardContent>
+          <Stack spacing={3}>
+            <Box>
+              <Typography variant="h6" gutterBottom>
+                英単語
+              </Typography>
+              <Stack direction="row" spacing={1} alignItems="flex-start">
+                <TextField
+                  fullWidth
+                  placeholder="英単語を入力"
+                  value={newWord}
+                  onChange={(e) => setNewWord(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  variant="outlined"
+                />
+                <IconButton
+                  onClick={handleLookupDictionary}
+                  disabled={dictionaryLoading || !newWord.trim()}
+                  color="primary"
+                  aria-label="辞書で調べる"
+                >
+                  {dictionaryLoading ? <CircularProgress size={24} /> : <Search />}
+                </IconButton>
+                {isSupported && (
+                  <IconButton
+                    onClick={() => speak(newWord)}
+                    disabled={isSpeaking || !newWord.trim()}
+                    color="secondary"
+                    aria-label="音声再生"
+                  >
+                    <VolumeUp />
+                  </IconButton>
+                )}
+              </Stack>
+            </Box>
 
-        {dictionaryResult && (
-          <div className='dictionary-result'>
-            <h4>辞書の結果:</h4>
-            <p>{dictionaryResult}</p>
-            <button
-              onClick={() => setNewMeaning(dictionaryResult)}
-              className='use-result-btn'
-            >
-              この意味を使用
-            </button>
-          </div>
-        )}
+            {dictionaryResult && (
+              <Paper elevation={1} sx={{ p: 2, bgcolor: 'grey.50' }}>
+                <Typography variant="h6" gutterBottom>
+                  辞書の結果
+                </Typography>
+                <Typography variant="body1" paragraph>
+                  {dictionaryResult}
+                </Typography>
+                <Button
+                  startIcon={<ContentCopy />}
+                  onClick={() => setNewMeaning(dictionaryResult)}
+                  variant="outlined"
+                  size="small"
+                >
+                  この意味を使用
+                </Button>
+              </Paper>
+            )}
 
-        <input
-          type='text'
-          placeholder='意味を入力'
-          value={newMeaning}
-          onChange={(e) => setNewMeaning(e.target.value)}
-          onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) =>
-            e.key === 'Enter' && handleAddWord()
-          }
-        />
-        <button onClick={handleAddWord} disabled={loading}>
-          {loading ? '保存中...' : '登録'}
-        </button>
-      </div>
-    </div>
+            <Divider />
+
+            <Box>
+              <Typography variant="h6" gutterBottom>
+                意味
+              </Typography>
+              <TextField
+                fullWidth
+                multiline
+                rows={3}
+                placeholder="意味を入力"
+                value={newMeaning}
+                onChange={(e) => setNewMeaning(e.target.value)}
+                onKeyPress={handleKeyPress}
+                variant="outlined"
+              />
+            </Box>
+
+            <Button
+              variant="contained"
+              size="large"
+              onClick={handleAddWord}
+              disabled={loading || !newWord.trim() || !newMeaning.trim()}
+              startIcon={loading ? <CircularProgress size={20} /> : <Add />}
+              fullWidth
+            >
+              {loading ? '保存中...' : '単語を登録'}
+            </Button>
+          </Stack>
+        </CardContent>
+      </Card>
+    </Box>
   );
 };
