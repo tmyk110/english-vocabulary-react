@@ -13,7 +13,7 @@ import {
   Tooltip,
   Stack,
 } from '@mui/material';
-import { Login, PersonAdd, Info } from '@mui/icons-material';
+import { Login, PersonAdd } from '@mui/icons-material';
 import { supabase } from '../supabaseClient';
 import type { AuthMode } from '../types';
 
