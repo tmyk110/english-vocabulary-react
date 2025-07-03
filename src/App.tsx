@@ -22,9 +22,10 @@ import { useVocabularyWords } from './hooks/useVocabularyWords';
 import { Auth } from './components/Auth';
 import { WordRegistration } from './components/WordRegistration';
 import { WordList } from './components/WordList';
+import NotificationSettings from './components/NotificationSettings';
 
 function App(): React.JSX.Element {
-  const [showReview, setShowReview] = useState(false);
+  const [currentTab, setCurrentTab] = useState(0);
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [showAuth, setShowAuth] = useState(false);
@@ -86,7 +87,31 @@ function App(): React.JSX.Element {
     event: React.SyntheticEvent,
     newValue: number
   ): void => {
-    setShowReview(newValue === 1);
+    setCurrentTab(newValue);
+  };
+
+  const renderTabContent = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+    
+    if (tabParam === 'notifications' || window.location.hash === '#notifications') {
+      return <NotificationSettings words={words} />;
+    }
+    
+    switch (currentTab) {
+      case 1:
+        return (
+          <WordList
+            words={words}
+            loading={loading}
+            onDeleteWord={deleteVocabularyWord}
+          />
+        );
+      case 2:
+        return <NotificationSettings words={words} />;
+      default:
+        return <WordRegistration onAddWord={handleAddWord} loading={loading} />;
+    }
   };
 
   return (
@@ -168,8 +193,21 @@ function App(): React.JSX.Element {
           <Container maxWidth='lg' sx={{ mt: 4, mb: 4 }}>
             <Box sx={{ borderBottom: 1, borderColor: 'rgba(255,255,255,0.3)', mb: 3 }}>
               <Tabs 
-                value={showReview ? 1 : 0} 
-                onChange={handleTabChange}
+                value={(() => {
+                  const urlParams = new URLSearchParams(window.location.search);
+                  const tabParam = urlParams.get('tab');
+                  if (tabParam === 'notifications' || window.location.hash === '#notifications') return 2;
+                  return currentTab;
+                })()} 
+                onChange={(event, newValue) => {
+                  if (newValue === 2) {
+                    window.location.hash = '#notifications';
+                    setCurrentTab(2);
+                  } else {
+                    window.location.hash = '';
+                    handleTabChange(event, newValue);
+                  }
+                }}
                 sx={{
                   '& .MuiTab-root': {
                     color: 'white',
@@ -184,18 +222,11 @@ function App(): React.JSX.Element {
               >
                 <Tab label='単語登録' />
                 <Tab label='単語一覧' />
+                <Tab label='通知設定' />
               </Tabs>
             </Box>
 
-            {!showReview ? (
-              <WordRegistration onAddWord={handleAddWord} loading={loading} />
-            ) : (
-              <WordList
-                words={words}
-                loading={loading}
-                onDeleteWord={deleteVocabularyWord}
-              />
-            )}
+            {renderTabContent()}
           </Container>
         </Box>
       )}
