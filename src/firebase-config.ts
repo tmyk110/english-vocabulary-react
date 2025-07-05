@@ -179,8 +179,12 @@ export const onMessageListener = () =>
       console.error('Firebase messaging not initialized for onMessage');
       return;
     }
-    onMessage(messaging, (payload) => {
-      console.log('Message received in foreground:', payload);
-      resolve(payload);
-    });
+    
+    // Disable foreground message handling - let Service Worker handle all notifications
+    console.log('⚠️ onMessageListener called but disabled to prevent duplicate notifications');
+    console.log('Service Worker will handle all notifications (foreground and background)');
+    
+    // Don't set up onMessage listener to prevent foreground handling
+    // resolve with null to indicate no foreground handling
+    resolve(null);
   });
