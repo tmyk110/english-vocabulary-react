@@ -18,9 +18,11 @@ serve(async (req) => {
   }
 
   try {
-    // Parse request body to check for test mode
+    // Parse request body to check for test mode and scheduled mode
     const requestBody = req.method === 'POST' ? await req.json().catch(() => ({})) : {};
     const isTestMode = requestBody.test === true;
+    const isScheduledMode = requestBody.scheduled === true;
+    const targetTime = requestBody.targetTime;
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -45,33 +47,43 @@ serve(async (req) => {
     const supabaseClient = createClient(supabaseUrl, serviceRoleKey)
 
     // Get all active FCM tokens with user notification settings
-    // In test mode, ignore notification_settings.is_enabled filter
-    const { data: allTokens, error: tokenError } = isTestMode 
-      ? await supabaseClient
-          .from('fcm_tokens')
-          .select(`
-            *,
-            notification_settings(
-              notification_time,
-              is_enabled,
-              timezone
-            )
-          `)
-          .eq('is_active', true)
-          .order('created_at', { ascending: false })
-      : await supabaseClient
-          .from('fcm_tokens')
-          .select(`
-            *,
-            notification_settings!inner(
-              notification_time,
-              is_enabled,
-              timezone
-            )
-          `)
-          .eq('is_active', true)
-          .eq('notification_settings.is_enabled', true)
-          .order('created_at', { ascending: false });
+    // Different queries based on mode: test, scheduled, or regular
+    let query = supabaseClient
+      .from('fcm_tokens')
+      .select(`
+        *,
+        notification_settings!inner(
+          notification_time,
+          is_enabled,
+          timezone
+        )
+      `)
+      .eq('is_active', true);
+
+    if (isTestMode) {
+      // Test mode: get all active tokens regardless of settings
+      query = supabaseClient
+        .from('fcm_tokens')
+        .select(`
+          *,
+          notification_settings(
+            notification_time,
+            is_enabled,
+            timezone
+          )
+        `)
+        .eq('is_active', true);
+    } else if (isScheduledMode && targetTime) {
+      // Scheduled mode: only users with specific notification time
+      query = query
+        .eq('notification_settings.is_enabled', true)
+        .eq('notification_settings.notification_time', targetTime);
+    } else {
+      // Regular mode: all enabled users
+      query = query.eq('notification_settings.is_enabled', true);
+    }
+
+    const { data: allTokens, error: tokenError } = await query.order('created_at', { ascending: false });
 
     if (tokenError) {
       console.error('Error fetching FCM tokens:', tokenError)
@@ -108,7 +120,7 @@ serve(async (req) => {
     let failureCount = 0
     const results = []
 
-    console.log(`Processing ${tokens.length} FCM tokens${isTestMode ? ' (TEST MODE)' : ''}`)
+    console.log(`Processing ${tokens.length} FCM tokens${isTestMode ? ' (TEST MODE)' : isScheduledMode ? ` (SCHEDULED MODE - ${targetTime})` : ''}`)
 
     for (const tokenRecord of tokens) {
       try {

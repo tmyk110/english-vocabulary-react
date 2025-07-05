@@ -18,14 +18,70 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Call the send-push-notification function
-    const functionUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/send-push-notification`
+    // Get current time in JST (UTC+9)
+    const now = new Date()
+    const jstOffset = 9 * 60 * 60 * 1000 // JST is UTC+9
+    const jstTime = new Date(now.getTime() + jstOffset)
+    const currentHour = jstTime.getHours()
+    const currentMinute = jstTime.getMinutes()
+    const currentTimeString = `${String(currentHour).padStart(2, '0')}:${String(currentMinute).padStart(2, '0')}:00`
+    
+    console.log(`Checking for notifications at JST time: ${currentTimeString}`)
+
+    // Get users who should receive notifications at this time
+    const { data: usersToNotify, error: usersError } = await supabaseClient
+      .from('notification_settings')
+      .select(`
+        user_id,
+        notification_time,
+        fcm_tokens!inner(
+          id,
+          token,
+          is_active
+        )
+      `)
+      .eq('is_enabled', true)
+      .eq('notification_time', currentTimeString)
+      .eq('fcm_tokens.is_active', true)
+
+    if (usersError) {
+      console.error('Error fetching users to notify:', usersError)
+      return new Response(
+        JSON.stringify({ 
+          error: 'Failed to fetch users for notifications',
+          details: usersError.message,
+          timestamp: new Date().toISOString()
+        }),
+        { status: 500, headers: corsHeaders }
+      )
+    }
+
+    if (!usersToNotify || usersToNotify.length === 0) {
+      console.log(`No users scheduled for notification at ${currentTimeString}`)
+      return new Response(
+        JSON.stringify({
+          message: 'No users scheduled for notification at this time',
+          currentTime: currentTimeString,
+          timestamp: new Date().toISOString()
+        }),
+        { status: 200, headers: corsHeaders }
+      )
+    }
+
+    console.log(`Found ${usersToNotify.length} users scheduled for notification at ${currentTimeString}`)
+
+    // Call the send-fcm-notification function for scheduled notifications
+    const functionUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/send-fcm-notification`
     const response = await fetch(functionUrl, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
         'Content-Type': 'application/json',
       },
+      body: JSON.stringify({ 
+        scheduled: true,
+        targetTime: currentTimeString
+      })
     })
 
     const result = await response.json()
@@ -36,6 +92,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         message: 'Scheduled notifications executed',
+        targetTime: currentTimeString,
+        usersFound: usersToNotify.length,
         timestamp: new Date().toISOString(),
         result: result
       }),
