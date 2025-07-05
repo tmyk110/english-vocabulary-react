@@ -330,7 +330,7 @@ export const useFCMNotifications = () => {
       console.log('FCM notifications enabled - Service Worker will handle all notifications');
       
       // Listen for messages to debug but don't show notifications
-      const unsubscribe = onMessageListener()
+      onMessageListener()
         .then((payload: any) => {
           console.log('🔔 FOREGROUND: Received FCM message:', payload);
           console.log('🔔 FOREGROUND: Service Worker should handle notification display');
