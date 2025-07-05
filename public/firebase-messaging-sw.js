@@ -25,39 +25,34 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage(function(payload) {
   console.log('[firebase-messaging-sw.js] Received background message ', payload);
 
-  // Check if any client (tab) is currently focused
-  self.clients.matchAll({
-    type: 'window',
-    includeUncontrolled: true
-  }).then(function(clients) {
-    const isAnyClientFocused = clients.some(client => client.focused);
-    
-    // Only show notification if no client is focused (true background)
-    if (!isAnyClientFocused) {
-      const notificationTitle = payload.notification?.title || '英単語学習リマインダー';
-      const notificationOptions = {
-        body: payload.notification?.body || '新しい学習リマインダーがあります',
-        icon: payload.notification?.icon || '/logo192.png',
-        badge: '/logo192.png',
-        data: payload.data,
-        tag: 'vocabulary-reminder', // Use same tag to prevent duplicates
-        actions: [
-          {
-            action: 'open',
-            title: '学習する'
-          },
-          {
-            action: 'close',
-            title: '後で'
-          }
-        ]
-      };
+  // Use unique tag based on message content to prevent duplicates
+  const messageId = payload.messageId || payload.data?.messageId || Date.now();
+  const uniqueTag = `vocabulary-${messageId}`;
+  
+  console.log('[firebase-messaging-sw.js] Using notification tag:', uniqueTag);
 
-      self.registration.showNotification(notificationTitle, notificationOptions);
-    } else {
-      console.log('[firebase-messaging-sw.js] Client is focused, skipping background notification');
-    }
-  });
+  const notificationTitle = payload.notification?.title || '英単語学習リマインダー';
+  const notificationOptions = {
+    body: payload.notification?.body || '新しい学習リマインダーがあります',
+    icon: payload.notification?.icon || '/logo192.png',
+    badge: '/logo192.png',
+    data: payload.data,
+    tag: uniqueTag, // Unique tag to prevent exact duplicates
+    requireInteraction: false,
+    actions: [
+      {
+        action: 'open',
+        title: '学習する'
+      },
+      {
+        action: 'close',
+        title: '後で'
+      }
+    ]
+  };
+
+  // Always show background notification (Firebase handles foreground/background detection)
+  self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
 // Handle notification click

@@ -101,9 +101,11 @@ export const requestNotificationPermission = async (): Promise<string | null> =>
           // Clear any existing registrations first
           const existingRegistrations = await navigator.serviceWorker.getRegistrations();
           for (const registration of existingRegistrations) {
-            if (registration.scope.includes('firebase') || registration.scope.includes('messaging')) {
+            if (registration.scope.includes('firebase') || 
+                registration.scope.includes('messaging') ||
+                registration.scope.includes('english-vocabulary-react')) {
               await registration.unregister();
-              console.log('Unregistered existing Firebase SW');
+              console.log('Unregistered existing Firebase SW:', registration.scope);
             }
           }
           

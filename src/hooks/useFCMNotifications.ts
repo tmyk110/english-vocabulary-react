@@ -264,24 +264,13 @@ export const useFCMNotifications = () => {
     }
   };
 
-  // Listen for foreground messages
+  // Disable foreground message listener to prevent duplicate notifications
+  // Service Worker will handle all notifications (both foreground and background)
   useEffect(() => {
     if (permission === 'granted') {
-      onMessageListener()
-        .then((payload: any) => {
-          console.log('Received foreground message:', payload);
-          
-          // Log the message data but don't show duplicate notification
-          // Service Worker will handle background notifications
-          // For foreground, we'll let the user know via console/UI updates instead
-          if (payload.data?.word) {
-            console.log(`📚 New vocabulary reminder: ${payload.data.word} - ${payload.data.meaning}`);
-          }
-          
-          // Optional: You could show an in-app banner/toast instead of browser notification
-          // This prevents duplicate notifications while still providing feedback
-        })
-        .catch((err) => console.log('Failed to receive message:', err));
+      console.log('FCM notifications enabled - Service Worker will handle all notifications');
+      // onMessageListener is intentionally disabled to prevent duplicates
+      // All notifications will be handled by the Service Worker
     }
   }, [permission]);
 
