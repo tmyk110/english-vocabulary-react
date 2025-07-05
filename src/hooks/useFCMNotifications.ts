@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { requestNotificationPermission } from '../firebase-config';
+import { requestNotificationPermission, onMessageListener } from '../firebase-config';
 import { supabase } from '../supabaseClient';
 
 export const useFCMNotifications = () => {
@@ -324,13 +324,18 @@ export const useFCMNotifications = () => {
     }
   };
 
-  // Disable foreground message listener to prevent duplicate notifications
-  // Service Worker will handle all notifications (both foreground and background)
+  // Monitor for foreground messages but don't show notifications (Service Worker handles this)
   useEffect(() => {
     if (permission === 'granted') {
       console.log('FCM notifications enabled - Service Worker will handle all notifications');
-      // onMessageListener is intentionally disabled to prevent duplicates
-      // All notifications will be handled by the Service Worker
+      
+      // Listen for messages to debug but don't show notifications
+      const unsubscribe = onMessageListener()
+        .then((payload: any) => {
+          console.log('🔔 FOREGROUND: Received FCM message:', payload);
+          console.log('🔔 FOREGROUND: Service Worker should handle notification display');
+        })
+        .catch((err) => console.log('Failed to receive message:', err));
     }
   }, [permission]);
 
