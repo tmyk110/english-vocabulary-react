@@ -41,7 +41,10 @@ messaging.onBackgroundMessage(function(payload) {
   const messageId = payload.messageId || payload.data?.messageId || Date.now();
   const uniqueTag = `vocabulary-${messageId}`;
   
+  console.log('[firebase-messaging-sw.js] 🔔 Preparing to show notification');
+  console.log('[firebase-messaging-sw.js] Message ID:', messageId);
   console.log('[firebase-messaging-sw.js] Using notification tag:', uniqueTag);
+  console.log('[firebase-messaging-sw.js] Payload:', payload);
 
   const notificationTitle = payload.notification?.title || '英単語学習リマインダー';
   const notificationOptions = {
@@ -51,6 +54,7 @@ messaging.onBackgroundMessage(function(payload) {
     data: payload.data,
     tag: uniqueTag, // Unique tag to prevent exact duplicates
     requireInteraction: false,
+    timestamp: Date.now(), // Add timestamp for debugging
     actions: [
       {
         action: 'open',
@@ -63,8 +67,29 @@ messaging.onBackgroundMessage(function(payload) {
     ]
   };
 
-  // Always show background notification (Firebase handles foreground/background detection)
-  self.registration.showNotification(notificationTitle, notificationOptions);
+  console.log('[firebase-messaging-sw.js] 🚀 Calling showNotification with options:', notificationOptions);
+  
+  // Check for existing notifications with the same tag before creating a new one
+  self.registration.getNotifications({ tag: uniqueTag })
+    .then((existingNotifications) => {
+      console.log('[firebase-messaging-sw.js] 🔍 Existing notifications with same tag:', existingNotifications.length);
+      
+      if (existingNotifications.length > 0) {
+        console.log('[firebase-messaging-sw.js] ⚠️ Notification with same tag already exists, skipping');
+        return;
+      }
+      
+      // Show notification only if no duplicate exists
+      return self.registration.showNotification(notificationTitle, notificationOptions);
+    })
+    .then(() => {
+      if (arguments.length > 0) { // Only log if showNotification was called
+        console.log('[firebase-messaging-sw.js] ✅ Notification displayed successfully');
+      }
+    })
+    .catch((error) => {
+      console.error('[firebase-messaging-sw.js] ❌ Failed to show notification:', error);
+    });
 });
 
 // Handle notification click
