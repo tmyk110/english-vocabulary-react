@@ -92,6 +92,21 @@ export const useFCMNotifications = () => {
         return true;
       }
 
+      // First, check if this exact token is already active for this user
+      const { data: existingActiveToken } = await supabase
+        .from('fcm_tokens')
+        .select('id')
+        .eq('user_id', user.user.id)
+        .eq('token', token)
+        .eq('is_active', true)
+        .single();
+
+      if (existingActiveToken) {
+        console.log('This FCM token is already active in database');
+        setIsTokenSaved(true);
+        return true;
+      }
+
       // Deactivate old tokens for this user (user might have multiple devices)
       await supabase
         .from('fcm_tokens')

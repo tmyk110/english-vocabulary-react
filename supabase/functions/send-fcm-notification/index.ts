@@ -40,11 +40,12 @@ serve(async (req) => {
 
     const supabaseClient = createClient(supabaseUrl, serviceRoleKey)
 
-    // Get all active FCM tokens
-    const { data: tokens, error: tokenError } = await supabaseClient
+    // Get all active FCM tokens, ensuring only one per user to prevent duplicates
+    const { data: allTokens, error: tokenError } = await supabaseClient
       .from('fcm_tokens')
       .select('*')
       .eq('is_active', true)
+      .order('created_at', { ascending: false });
 
     if (tokenError) {
       console.error('Error fetching FCM tokens:', tokenError)
@@ -52,6 +53,19 @@ serve(async (req) => {
         JSON.stringify({ error: 'Failed to fetch FCM tokens', details: tokenError.message }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
+    }
+
+    // Remove duplicate tokens per user (keep only the most recent one per user)
+    const userTokenMap = new Map();
+    const tokens = [];
+    
+    for (const token of allTokens || []) {
+      if (!userTokenMap.has(token.user_id)) {
+        userTokenMap.set(token.user_id, token);
+        tokens.push(token);
+      } else {
+        console.log(`Skipping duplicate token for user ${token.user_id}`);
+      }
     }
 
     if (!tokens || tokens.length === 0) {
