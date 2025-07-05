@@ -12,8 +12,10 @@ import {
 } from '@mui/material';
 import {
   Notifications as NotificationsIcon,
+  CloudQueue as FirebaseIcon,
 } from '@mui/icons-material';
 import { useNotifications } from '../hooks/useNotifications';
+import { useFCMNotifications } from '../hooks/useFCMNotifications';
 import type { VocabularyWord } from '../types';
 
 interface NotificationSettingsProps {
@@ -27,7 +29,19 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ words }) =>
     requestPermission,
     scheduleNotification,
     isServiceWorkerRegistered,
+    isSubscribed,
   } = useNotifications();
+
+  const {
+    fcmToken,
+    permission: fcmPermission,
+    isTokenSaved,
+    loading: fcmLoading,
+    setupFCMNotifications,
+    testFCMNotification,
+  } = useFCMNotifications();
+
+  const [useNewFCM, setUseNewFCM] = React.useState(true);
 
   const handleEnableNotifications = async () => {
     const result = await requestPermission();
@@ -44,73 +58,31 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ words }) =>
 
   const handleTestNotification = () => {
     console.log('Test notification button clicked');
-    console.log('Current state:', { permission, wordsLength: words.length, isSupported, isServiceWorkerRegistered });
-    
-    // 詳細な診断情報
-    console.log('Browser notification permission:', Notification.permission);
-    console.log('Notification constructor available:', typeof Notification !== 'undefined');
-    console.log('User agent:', navigator.userAgent);
-    
     scheduleNotification(words);
   };
 
-  const handleSystemDiagnostics = () => {
-    const diagnostics = {
-      notificationPermission: Notification.permission,
-      notificationSupported: 'Notification' in window,
-      serviceWorkerSupported: 'serviceWorker' in navigator,
-      userAgent: navigator.userAgent,
-      currentUrl: window.location.href,
-      timestamp: new Date().toISOString()
-    };
-    
-    console.log('System Diagnostics:', diagnostics);
-    
-    // 簡単な通知テスト
-    try {
-      const testNotification = new Notification('システム診断テスト', {
-        body: 'この通知が表示されれば、基本的な通知機能は動作しています。',
-        icon: '/logo192.png'
-      });
-      
-      testNotification.onshow = () => {
-        console.log('診断テスト通知が表示されました');
-      };
-      
-      testNotification.onerror = (error) => {
-        console.error('診断テスト通知でエラー:', error);
-      };
-      
-    } catch (error) {
-      console.error('診断テスト通知の作成に失敗:', error);
-      alert(`通知作成エラー: ${error}`);
-    }
-  };
 
-  const handleSimpleTest = () => {
-    if (words.length === 0) {
-      alert('まず英単語を登録してください。');
-      return;
-    }
 
-    const randomWord = words[Math.floor(Math.random() * words.length)];
-    console.log('Simple test notification for word:', randomWord);
-    
+
+
+  const handleSetupFCM = async () => {
+    console.log('Setting up FCM notifications...');
     try {
-      const notification = new Notification('英単語テスト通知', {
-        body: `単語: ${randomWord.word}\n意味: ${randomWord.meaning}`,
-        icon: '/logo192.png'
-      });
+      const success = await setupFCMNotifications();
+      console.log('setupFCMNotifications result:', success);
       
-      notification.onshow = () => {
-        console.log('✅ シンプルテスト通知が表示されました！');
-      };
-      
-      notification.onerror = (error) => {
-        console.error('シンプルテスト通知でエラー:', error);
-      };
+      if (success) {
+        const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const message = isDevelopment 
+          ? 'FCMプッシュ通知の設定が完了しました！\n\n開発環境ではモックトークンを使用しています。\n本番環境（HTTPS）では実際の通知が送信されます。'
+          : 'FCMプッシュ通知の設定が完了しました！\n毎日10時に学習リマインダーが届きます。';
+        alert(message);
+      } else {
+        alert('FCMプッシュ通知の設定に失敗しました。\nブラウザの通知許可を確認してください。');
+      }
     } catch (error) {
-      console.error('シンプルテスト通知の作成に失敗:', error);
+      console.error('FCM setup error:', error);
+      alert(`FCM設定エラー: ${error}`);
     }
   };
 
@@ -154,21 +126,100 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ words }) =>
           毎日10時に登録した英単語からランダムで1つ選んで学習リマインダーを送信します
         </Typography>
 
+        {/* Notification System Selector */}
+        <Box sx={{ my: 2, p: 2, border: '1px solid #e0e0e0', borderRadius: 1 }}>
+          <Typography variant="subtitle2" gutterBottom>
+            通知システム選択:
+          </Typography>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={useNewFCM}
+                onChange={(e) => setUseNewFCM(e.target.checked)}
+                color="primary"
+              />
+            }
+            label={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {useNewFCM ? (
+                  <>
+                    <FirebaseIcon color="primary" />
+                    <Typography variant="body2">
+                      Firebase Cloud Messaging (推奨)
+                    </Typography>
+                  </>
+                ) : (
+                  <>
+                    <NotificationsIcon />
+                    <Typography variant="body2">
+                      Web Push (従来方式)
+                    </Typography>
+                  </>
+                )}
+              </Box>
+            }
+          />
+          {useNewFCM && (
+            <>
+              <Alert severity="info" sx={{ mt: 1 }}>
+                <Typography variant="body2">
+                  FCMを使用すると、より確実にプッシュ通知が届きます。Firebaseプロジェクトの設定が必要です。
+                </Typography>
+              </Alert>
+              {(window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && (
+                <Alert severity="warning" sx={{ mt: 1 }}>
+                  <Typography variant="body2">
+                    <strong>開発環境（localhost）</strong>: FCMはHTTPS環境でのみ完全に動作します。
+                    開発時はモックトークンを使用してUIテストが可能です。
+                  </Typography>
+                </Alert>
+              )}
+            </>
+          )}
+        </Box>
+
         <Box sx={{ my: 2 }}>
           <Typography variant="body2" gutterBottom>
             通知状況:
           </Typography>
-          <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-            <Chip 
-              label={`通知許可: ${permissionStatus.text}`}
-              color={permissionStatus.color}
-              size="small"
-            />
-            <Chip 
-              label={`Service Worker: ${isServiceWorkerRegistered ? '登録済み' : '未登録'}`}
-              color={isServiceWorkerRegistered ? 'success' : 'warning'}
-              size="small"
-            />
+          <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+            {useNewFCM ? (
+              <>
+                <Chip 
+                  label={`FCM許可: ${fcmPermission === 'granted' ? '許可済み' : fcmPermission === 'denied' ? '拒否' : '未設定'}`}
+                  color={fcmPermission === 'granted' ? 'success' : fcmPermission === 'denied' ? 'error' : 'warning'}
+                  size="small"
+                />
+                <Chip 
+                  label={`FCMトークン: ${fcmToken ? '取得済み' : '未取得'}`}
+                  color={fcmToken ? 'success' : 'default'}
+                  size="small"
+                />
+                <Chip 
+                  label={`DB保存: ${isTokenSaved ? '保存済み' : '未保存'}`}
+                  color={isTokenSaved ? 'success' : 'default'}
+                  size="small"
+                />
+              </>
+            ) : (
+              <>
+                <Chip 
+                  label={`通知許可: ${permissionStatus.text}`}
+                  color={permissionStatus.color}
+                  size="small"
+                />
+                <Chip 
+                  label={`Service Worker: ${isServiceWorkerRegistered ? '登録済み' : '未登録'}`}
+                  color={isServiceWorkerRegistered ? 'success' : 'warning'}
+                  size="small"
+                />
+                <Chip 
+                  label={`プッシュ通知: ${isSubscribed ? 'サブスクリプション済み' : '未設定'}`}
+                  color={isSubscribed ? 'success' : 'default'}
+                  size="small"
+                />
+              </>
+            )}
             <Chip 
               label={`登録単語数: ${words.length}個`}
               color={words.length > 0 ? 'info' : 'default'}
@@ -212,40 +263,71 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ words }) =>
           </Box>
         )}
 
-        {permission === 'granted' && words.length > 0 && (
+        {((useNewFCM && fcmPermission === 'granted') || (!useNewFCM && permission === 'granted')) && words.length > 0 && (
           <>
             <Alert severity="success" sx={{ mt: 2 }}>
-              通知が有効になりました！毎日10時に学習リマインダーが届きます。
+              {useNewFCM 
+                ? (isTokenSaved 
+                    ? '✅ FCMプッシュ通知が設定されました！毎日10時に学習リマインダーが届きます。'
+                    : 'FCM通知許可は完了しています。下のボタンでプッシュ通知を設定してください。')
+                : (isSubscribed 
+                    ? '✅ プッシュ通知が設定されました！毎日10時に学習リマインダーが届きます。'
+                    : '通知許可は完了しています。下のボタンでプッシュ通知を設定してください。')
+              }
             </Alert>
-            <Alert severity="info" sx={{ mt: 1 }}>
-              <strong>macOSの場合：</strong>システム設定 → 通知 → {navigator.userAgent.includes('Chrome') ? 'Google Chrome' : 'ブラウザ'} で通知が有効になっているか確認してください。<br />
-              <strong>集中モード：</strong>集中モードまたはおやすみモードがオンになっていると通知が表示されません。
-            </Alert>
+            {((useNewFCM && !isTokenSaved) || (!useNewFCM && !isSubscribed)) && (
+              <Alert severity="info" sx={{ mt: 1 }}>
+                <strong>macOSの場合：</strong>システム設定 → 通知 → {navigator.userAgent.includes('Chrome') ? 'Google Chrome' : 'ブラウザ'} で通知が有効になっているか確認してください。
+              </Alert>
+            )}
             <Box sx={{ mt: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-              <Button
-                variant="outlined"
-                onClick={handleTestNotification}
-                startIcon={<NotificationsIcon />}
-                size="small"
-              >
-                テスト通知を送信
-              </Button>
-              <Button
-                variant="contained"
-                onClick={handleSimpleTest}
-                size="small"
-                color="primary"
-              >
-                シンプルテスト
-              </Button>
-              <Button
-                variant="text"
-                onClick={handleSystemDiagnostics}
-                size="small"
-                color="secondary"
-              >
-                システム診断
-              </Button>
+              {useNewFCM ? (
+                <>
+                  <Button
+                    variant="contained"
+                    onClick={handleSetupFCM}
+                    startIcon={<FirebaseIcon />}
+                    disabled={isTokenSaved || fcmLoading}
+                    color="primary"
+                  >
+                    {fcmLoading 
+                      ? 'FCM設定中...' 
+                      : isTokenSaved 
+                        ? 'FCM通知設定完了' 
+                        : 'FCM通知を設定する'}
+                  </Button>
+                  {isTokenSaved && (
+                    <Button
+                      variant="outlined"
+                      onClick={testFCMNotification}
+                      startIcon={<FirebaseIcon />}
+                      color="success"
+                    >
+                      通知テスト
+                    </Button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="contained"
+                    onClick={handleTestNotification}
+                    startIcon={<NotificationsIcon />}
+                    disabled={isSubscribed}
+                  >
+                    {isSubscribed ? 'プッシュ通知設定完了' : 'プッシュ通知を設定する'}
+                  </Button>
+                  {isSubscribed && (
+                    <Button
+                      variant="outlined"
+                      onClick={() => alert('従来方式の通知テストは開発中です。\nFCM方式をご利用ください。')}
+                      color="success"
+                    >
+                      通知テスト
+                    </Button>
+                  )}
+                </>
+              )}
             </Box>
           </>
         )}
