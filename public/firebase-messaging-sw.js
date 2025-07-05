@@ -34,8 +34,9 @@ self.addEventListener('activate', function(event) {
 
 // Handle background messages
 messaging.onBackgroundMessage(function(payload) {
-  console.log('[firebase-messaging-sw.js] Received background message ', payload);
+  console.log('[firebase-messaging-sw.js] 🎯 BACKGROUND MESSAGE RECEIVED:', payload);
   console.log('[firebase-messaging-sw.js] Service Worker ID:', self.registration.scope);
+  console.log('[firebase-messaging-sw.js] Timestamp:', new Date().toISOString());
 
   // Use unique tag based on message content to prevent duplicates
   const messageId = payload.messageId || payload.data?.messageId || Date.now();
@@ -69,26 +70,45 @@ messaging.onBackgroundMessage(function(payload) {
 
   console.log('[firebase-messaging-sw.js] 🚀 Calling showNotification with options:', notificationOptions);
   
-  // Check for existing notifications with the same tag before creating a new one
+  // Enhanced duplicate prevention: Check both existing notifications and recent message cache
+  const recentMessageKey = `recent_message_${messageId}`;
+  const cacheExpiry = 5000; // 5 seconds
+  
+  // Check if we've recently processed this message
+  if (self[recentMessageKey] && (Date.now() - self[recentMessageKey]) < cacheExpiry) {
+    console.log('[firebase-messaging-sw.js] ⚠️ Message recently processed, skipping duplicate');
+    return;
+  }
+  
+  // Mark this message as processed
+  self[recentMessageKey] = Date.now();
+  
+  // Also check for existing notifications with the same tag
   self.registration.getNotifications({ tag: uniqueTag })
     .then((existingNotifications) => {
       console.log('[firebase-messaging-sw.js] 🔍 Existing notifications with same tag:', existingNotifications.length);
       
       if (existingNotifications.length > 0) {
         console.log('[firebase-messaging-sw.js] ⚠️ Notification with same tag already exists, skipping');
+        // Clear recent message cache for this duplicate
+        delete self[recentMessageKey];
         return;
       }
+      
+      console.log('[firebase-messaging-sw.js] 🚀 Creating notification...');
       
       // Show notification only if no duplicate exists
       return self.registration.showNotification(notificationTitle, notificationOptions);
     })
-    .then(() => {
-      if (arguments.length > 0) { // Only log if showNotification was called
+    .then((result) => {
+      if (result !== undefined) { // Only log if showNotification was called
         console.log('[firebase-messaging-sw.js] ✅ Notification displayed successfully');
       }
     })
     .catch((error) => {
       console.error('[firebase-messaging-sw.js] ❌ Failed to show notification:', error);
+      // Clear cache on error
+      delete self[recentMessageKey];
     });
 });
 
