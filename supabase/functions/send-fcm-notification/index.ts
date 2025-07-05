@@ -18,6 +18,10 @@ serve(async (req) => {
   }
 
   try {
+    // Parse request body to check for test mode
+    const requestBody = req.method === 'POST' ? await req.json().catch(() => ({})) : {};
+    const isTestMode = requestBody.test === true;
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     const firebaseProjectId = Deno.env.get('FIREBASE_PROJECT_ID')
@@ -40,12 +44,34 @@ serve(async (req) => {
 
     const supabaseClient = createClient(supabaseUrl, serviceRoleKey)
 
-    // Get all active FCM tokens, ensuring only one per user to prevent duplicates
-    const { data: allTokens, error: tokenError } = await supabaseClient
-      .from('fcm_tokens')
-      .select('*')
-      .eq('is_active', true)
-      .order('created_at', { ascending: false });
+    // Get all active FCM tokens with user notification settings
+    // In test mode, ignore notification_settings.is_enabled filter
+    const { data: allTokens, error: tokenError } = isTestMode 
+      ? await supabaseClient
+          .from('fcm_tokens')
+          .select(`
+            *,
+            notification_settings(
+              notification_time,
+              is_enabled,
+              timezone
+            )
+          `)
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+      : await supabaseClient
+          .from('fcm_tokens')
+          .select(`
+            *,
+            notification_settings!inner(
+              notification_time,
+              is_enabled,
+              timezone
+            )
+          `)
+          .eq('is_active', true)
+          .eq('notification_settings.is_enabled', true)
+          .order('created_at', { ascending: false });
 
     if (tokenError) {
       console.error('Error fetching FCM tokens:', tokenError)
@@ -82,7 +108,7 @@ serve(async (req) => {
     let failureCount = 0
     const results = []
 
-    console.log(`Processing ${tokens.length} FCM tokens`)
+    console.log(`Processing ${tokens.length} FCM tokens${isTestMode ? ' (TEST MODE)' : ''}`)
 
     for (const tokenRecord of tokens) {
       try {
