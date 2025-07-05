@@ -21,9 +21,21 @@ firebase.initializeApp(firebaseConfig);
 // Retrieve firebase messaging
 const messaging = firebase.messaging();
 
+// Debug: Check for multiple service worker registrations
+self.addEventListener('install', function(event) {
+  console.log('[firebase-messaging-sw.js] Service Worker installing...');
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', function(event) {
+  console.log('[firebase-messaging-sw.js] Service Worker activated');
+  event.waitUntil(self.clients.claim());
+});
+
 // Handle background messages
 messaging.onBackgroundMessage(function(payload) {
   console.log('[firebase-messaging-sw.js] Received background message ', payload);
+  console.log('[firebase-messaging-sw.js] Service Worker ID:', self.registration.scope);
 
   // Use unique tag based on message content to prevent duplicates
   const messageId = payload.messageId || payload.data?.messageId || Date.now();

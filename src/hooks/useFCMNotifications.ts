@@ -143,19 +143,57 @@ export const useFCMNotifications = () => {
 
   const setupFCMNotifications = async (): Promise<boolean> => {
     try {
+      console.log('🔧 Starting FCM setup process...');
+      
       // Request permission and get token
       const token = await requestPermissionAndGetToken();
       
       if (token) {
+        console.log('✅ FCM token obtained:', token.substring(0, 20) + '...');
+        
         // Save token to database
         const saved = await saveFCMTokenToDatabase(token);
+        
+        if (saved) {
+          console.log('✅ FCM setup completed successfully');
+          
+          // Debug: Check how many active tokens this user has
+          await debugActiveTokens();
+        }
+        
         return saved;
       }
       
+      console.log('❌ Failed to obtain FCM token');
       return false;
     } catch (error) {
       console.error('Error setting up FCM notifications:', error);
       return false;
+    }
+  };
+
+  const debugActiveTokens = async () => {
+    try {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) return;
+
+      const { data: activeTokens } = await supabase
+        .from('fcm_tokens')
+        .select('id, token, created_at, device_info')
+        .eq('user_id', user.user.id)
+        .eq('is_active', true);
+
+      console.log('🔍 Debug: Active FCM tokens for this user:', activeTokens?.length || 0);
+      activeTokens?.forEach((token, index) => {
+        console.log(`Token ${index + 1}:`, {
+          id: token.id,
+          tokenStart: token.token.substring(0, 20) + '...',
+          created: token.created_at,
+          userAgent: token.device_info?.userAgent?.substring(0, 50) + '...'
+        });
+      });
+    } catch (error) {
+      console.error('Debug error:', error);
     }
   };
 
@@ -236,8 +274,13 @@ export const useFCMNotifications = () => {
         return;
       }
 
+      // Debug: Check active tokens before testing
+      await debugActiveTokens();
+      
       // For production, try Edge Function but fallback to local notification if it fails
       try {
+        console.log('🧪 Starting FCM notification test...');
+        
         const response = await fetch(
           `${process.env.REACT_APP_SUPABASE_URL}/functions/v1/send-fcm-notification`,
           {
@@ -251,7 +294,9 @@ export const useFCMNotifications = () => {
         );
 
         const result = await response.json();
-        console.log('FCM test result:', result);
+        console.log('📊 FCM test result:', result);
+        console.log('📊 Total tokens processed:', result.totalTokens);
+        console.log('📊 Notifications sent:', result.successCount);
         
         if (response.ok) {
           alert(`FCM通知テスト完了\n成功: ${result.successCount || 0}\n失敗: ${result.failureCount || 0}\n合計トークン: ${result.totalTokens || 0}`);
