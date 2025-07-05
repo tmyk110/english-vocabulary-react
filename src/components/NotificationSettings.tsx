@@ -197,7 +197,7 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ words }) =>
             通知時刻設定:
           </Typography>
           <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={6} component="div">
               <TextField
                 label="通知時刻"
                 type="time"
@@ -211,7 +211,7 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ words }) =>
                 helperText="毎日この時刻に学習リマインダーが送信されます"
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={6} component="div">
               <Alert severity="info" sx={{ mb: 0 }}>
                 <Typography variant="body2">
                   現在の設定: <strong>{notificationTime}</strong><br/>
