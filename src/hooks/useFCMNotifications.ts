@@ -221,25 +221,42 @@ export const useFCMNotifications = () => {
         return;
       }
 
-      const response = await fetch(
-        `${process.env.REACT_APP_SUPABASE_URL}/functions/v1/send-fcm-notification`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify({ test: true })
-        }
-      );
+      // For production, try Edge Function but fallback to local notification if it fails
+      try {
+        const response = await fetch(
+          `${process.env.REACT_APP_SUPABASE_URL}/functions/v1/send-fcm-notification`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}`,
+            },
+            body: JSON.stringify({ test: true })
+          }
+        );
 
-      const result = await response.json();
-      console.log('FCM test result:', result);
-      
-      if (response.ok) {
-        alert(`FCM通知テスト完了\n成功: ${result.successCount || 0}\n失敗: ${result.failureCount || 0}\n合計トークン: ${result.totalTokens || 0}`);
-      } else {
-        alert(`FCM通知テスト失敗: ${result.error || 'Unknown error'}`);
+        const result = await response.json();
+        console.log('FCM test result:', result);
+        
+        if (response.ok) {
+          alert(`FCM通知テスト完了\n成功: ${result.successCount || 0}\n失敗: ${result.failureCount || 0}\n合計トークン: ${result.totalTokens || 0}`);
+        } else {
+          throw new Error(`Edge Function error: ${result.error || 'Unknown error'}`);
+        }
+      } catch (edgeFunctionError) {
+        console.log('Edge Function failed, falling back to local notification test:', edgeFunctionError);
+        
+        // Show user the option to test with local notification
+        const fallbackTest = window.confirm(
+          `Edge Function通信エラー\n\n代わりにローカル通知でテストしますか？\n\n(Edge Functionは後でデプロイ設定を確認する必要があります)`
+        );
+        
+        if (fallbackTest) {
+          await testLocalNotification();
+          alert(`ローカル通知テスト完了\n\nNote: サーバー側のEdge Functionは後でデプロイ設定を確認してください。`);
+        } else {
+          throw edgeFunctionError;
+        }
       }
     } catch (error) {
       console.error('Error testing FCM notification:', error);
