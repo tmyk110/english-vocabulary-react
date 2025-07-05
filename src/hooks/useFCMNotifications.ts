@@ -192,6 +192,19 @@ export const useFCMNotifications = () => {
           userAgent: token.device_info?.userAgent?.substring(0, 50) + '...'
         });
       });
+
+      // Debug Service Worker status
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        console.log('🔍 Debug: Service Worker registrations:', registrations.length);
+        registrations.forEach((reg, index) => {
+          console.log(`SW ${index + 1}:`, {
+            scope: reg.scope,
+            state: reg.active?.state || 'inactive',
+            scriptURL: reg.active?.scriptURL || 'none'
+          });
+        });
+      }
     } catch (error) {
       console.error('Debug error:', error);
     }

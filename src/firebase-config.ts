@@ -174,17 +174,47 @@ export const requestNotificationPermission = async (): Promise<string | null> =>
 };
 
 export const onMessageListener = () =>
-  new Promise((resolve) => {
+  new Promise((resolve, reject) => {
     if (!messaging) {
       console.error('Firebase messaging not initialized for onMessage');
+      reject('Messaging not initialized');
       return;
     }
     
-    // Disable foreground message handling - let Service Worker handle all notifications
-    console.log('⚠️ onMessageListener called but disabled to prevent duplicate notifications');
-    console.log('Service Worker will handle all notifications (foreground and background)');
+    console.log('🔧 Setting up foreground message listener (emergency fallback)');
     
-    // Don't set up onMessage listener to prevent foreground handling
-    // resolve with null to indicate no foreground handling
-    resolve(null);
+    // Import onMessage for emergency use
+    import('firebase/messaging').then(({ onMessage }) => {
+      onMessage(messaging!, (payload) => {
+        console.log('🔔 EMERGENCY: Received foreground message:', payload);
+        console.log('🔔 EMERGENCY: Manually creating notification');
+        
+        // Manually create notification since Service Worker isn't working
+        if (Notification.permission === 'granted' && payload.notification) {
+          const notification = new Notification(
+            payload.notification.title || '英単語学習リマインダー',
+            {
+              body: payload.notification.body || '新しい学習リマインダーがあります',
+              icon: '/logo192.png',
+              badge: '/logo192.png',
+              tag: `emergency-${Date.now()}`,
+              requireInteraction: false,
+              data: payload.data
+            }
+          );
+
+          notification.onclick = () => {
+            console.log('Emergency notification clicked');
+            window.focus();
+            notification.close();
+          };
+
+          setTimeout(() => notification.close(), 5000);
+          
+          console.log('🔔 EMERGENCY: Notification created manually');
+        }
+        
+        resolve(payload);
+      });
+    }).catch(reject);
   });
