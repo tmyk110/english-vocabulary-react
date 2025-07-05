@@ -11,15 +11,44 @@ const firebaseConfig = {
   appId: process.env.REACT_APP_FIREBASE_APP_ID
 };
 
-const app = initializeApp(firebaseConfig);
+// Firebase設定の検証
+const isFirebaseConfigValid = () => {
+  const requiredKeys = ['apiKey', 'authDomain', 'projectId', 'messagingSenderId', 'appId'];
+  const missingKeys = requiredKeys.filter(key => !firebaseConfig[key as keyof typeof firebaseConfig]);
+  
+  if (missingKeys.length > 0) {
+    console.warn('Missing Firebase configuration:', missingKeys);
+    return false;
+  }
+  return true;
+};
 
-// FCM messaging service
+let app: any = null;
 let messaging: Messaging | null = null;
+
+// Firebase初期化
 try {
-  messaging = getMessaging(app);
-  console.log('Firebase messaging initialized successfully');
+  if (isFirebaseConfigValid()) {
+    app = initializeApp(firebaseConfig);
+    console.log('Firebase app initialized successfully');
+    
+    // FCM messaging service - Service Workerが利用可能な場合のみ初期化
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      try {
+        messaging = getMessaging(app);
+        console.log('Firebase messaging initialized successfully');
+      } catch (messagingError) {
+        console.error('Failed to initialize Firebase messaging:', messagingError);
+        console.log('FCM will not be available in this session');
+      }
+    } else {
+      console.log('Service Worker not supported, FCM will not be available');
+    }
+  } else {
+    console.error('Firebase configuration is incomplete. FCM features will be disabled.');
+  }
 } catch (error) {
-  console.error('Failed to initialize Firebase messaging:', error);
+  console.error('Failed to initialize Firebase:', error);
 }
 
 export { messaging };
@@ -32,6 +61,18 @@ export const requestNotificationPermission = async (): Promise<string | null> =>
     // Check if messaging is available
     if (!messaging) {
       console.error('Firebase messaging not initialized');
+      
+      // より詳細なエラー情報を提供
+      if (!isFirebaseConfigValid()) {
+        console.error('Firebase configuration is missing or incomplete');
+        alert('Firebase設定が不完全です。管理者にお問い合わせください。');
+      } else if (!('serviceWorker' in navigator)) {
+        console.error('Service Worker not supported');
+        alert('お使いのブラウザではプッシュ通知がサポートされていません。');
+      } else {
+        alert('プッシュ通知サービスの初期化に失敗しました。ページを再読み込みして再度お試しください。');
+      }
+      
       return null;
     }
 
