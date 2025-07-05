@@ -28,6 +28,15 @@ serve(async (req) => {
     
     console.log(`Checking for notifications at JST time: ${currentTimeString}`)
 
+    // Debug: First check all notification settings
+    const { data: allSettings } = await supabaseClient
+      .from('notification_settings')
+      .select('*')
+      .eq('is_enabled', true)
+    
+    console.log('All enabled notification settings:', allSettings)
+    console.log('Looking for time:', currentTimeString)
+
     // Get users who should receive notifications at this time
     const { data: usersToNotify, error: usersError } = await supabaseClient
       .from('notification_settings')
@@ -43,6 +52,9 @@ serve(async (req) => {
       .eq('is_enabled', true)
       .eq('notification_time', currentTimeString)
       .eq('fcm_tokens.is_active', true)
+
+    console.log('Query result for scheduled users:', usersToNotify)
+    console.log('Query error:', usersError)
 
     if (usersError) {
       console.error('Error fetching users to notify:', usersError)
