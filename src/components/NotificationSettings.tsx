@@ -89,6 +89,7 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ words }) =>
         .upsert({
           user_id: user.user.id,
           notification_time: `${newTime}:00`, // Convert "HH:MM" to "HH:MM:SS"
+          is_enabled: true, // Ensure notifications are enabled when time is set
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'user_id'
@@ -265,6 +266,59 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ words }) =>
                     sx={{ ml: 1 }}
                   >
                     ⏰ スケジューラーテスト
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    onClick={async () => {
+                      try {
+                        const { data: user } = await supabase.auth.getUser();
+                        if (!user.user) {
+                          alert('ログインが必要です');
+                          return;
+                        }
+
+                        // Check notification settings
+                        const { data: settings } = await supabase
+                          .from('notification_settings')
+                          .select('*')
+                          .eq('user_id', user.user.id)
+                          .single();
+
+                        // Check FCM tokens
+                        const { data: tokens } = await supabase
+                          .from('fcm_tokens')
+                          .select('*')
+                          .eq('user_id', user.user.id)
+                          .eq('is_active', true);
+
+                        // Check combined query (same as scheduler uses)
+                        const { data: combined } = await supabase
+                          .from('fcm_tokens')
+                          .select(`
+                            *,
+                            notification_settings!inner(
+                              notification_time,
+                              is_enabled,
+                              timezone
+                            )
+                          `)
+                          .eq('is_active', true)
+                          .eq('notification_settings.is_enabled', true)
+                          .eq('notification_settings.notification_time', `${notificationTime}:00`);
+
+                        console.log('Debug data:', { settings, tokens, combined });
+                        
+                        alert(`デバッグ情報:\n\nユーザーID: ${user.user.id}\n\n通知設定:\n- 時刻: ${settings?.notification_time || 'なし'}\n- 有効: ${settings?.is_enabled || false}\n\nFCMトークン: ${tokens?.length || 0}個\n\n結合クエリ結果: ${combined?.length || 0}件\n\n詳細はコンソールを確認してください`);
+                      } catch (error) {
+                        console.error('Debug error:', error);
+                        alert(`デバッグエラー: ${error}`);
+                      }
+                    }}
+                    size="small"
+                    sx={{ ml: 1 }}
+                    color="info"
+                  >
+                    🔍 デバッグ情報
                   </Button>
                 </Box>
               )}
