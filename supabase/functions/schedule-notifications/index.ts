@@ -20,8 +20,8 @@ serve(async (req) => {
 
     // Get current time in JST (UTC+9)
     const now = new Date()
-    const jstOffset = 9 * 60 * 60 * 1000 // JST is UTC+9
-    const jstTime = new Date(now.getTime() + jstOffset)
+    // Create JST time using toLocaleString to handle timezone properly
+    const jstTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Tokyo"}))
     const currentHour = jstTime.getHours()
     const currentMinute = jstTime.getMinutes()
     const currentTimeString = `${String(currentHour).padStart(2, '0')}:${String(currentMinute).padStart(2, '0')}:00`

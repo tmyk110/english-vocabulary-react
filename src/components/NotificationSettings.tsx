@@ -252,7 +252,7 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ words }) =>
                         console.log('Scheduler test result:', result);
                         
                         const now = new Date();
-                        const jstTime = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+                        const jstTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Tokyo"}));
                         const currentJST = `${String(jstTime.getHours()).padStart(2, '0')}:${String(jstTime.getMinutes()).padStart(2, '0')}`;
                         
                         alert(`スケジューラーテスト結果:\n\n現在時刻(JST): ${currentJST}\n設定時刻: ${notificationTime}\n対象ユーザー: ${result.usersFound || 0}人\n\n${result.message || result.error || 'テスト完了'}`);
