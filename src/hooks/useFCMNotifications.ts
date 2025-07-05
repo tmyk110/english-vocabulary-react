@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { requestNotificationPermission, onMessageListener } from '../firebase-config';
+import { requestNotificationPermission } from '../firebase-config';
 import { supabase } from '../supabaseClient';
 
 export const useFCMNotifications = () => {
