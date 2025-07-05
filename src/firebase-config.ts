@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getMessaging, getToken, onMessage, type Messaging } from 'firebase/messaging';
+import { getMessaging, getToken, type Messaging } from 'firebase/messaging';
 
 const firebaseConfig = {
   // これらの値は実際のFirebaseプロジェクトの設定に置き換えてください
