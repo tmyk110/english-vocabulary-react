@@ -50,8 +50,8 @@ messaging.onBackgroundMessage(function(payload) {
   const notificationTitle = payload.notification?.title || '英単語学習リマインダー';
   const notificationOptions = {
     body: payload.notification?.body || '新しい学習リマインダーがあります',
-    icon: payload.notification?.icon || '/logo192.png',
-    badge: '/logo192.png',
+    icon: payload.notification?.icon || '/english-vocabulary-react/logo192.png',
+    badge: '/english-vocabulary-react/logo192.png',
     data: payload.data,
     tag: uniqueTag, // Unique tag to prevent exact duplicates
     requireInteraction: false,

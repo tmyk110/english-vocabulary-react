@@ -195,8 +195,8 @@ export const onMessageListener = () =>
             payload.notification.title || '英単語学習リマインダー',
             {
               body: payload.notification.body || '新しい学習リマインダーがあります',
-              icon: '/logo192.png',
-              badge: '/logo192.png',
+              icon: '/english-vocabulary-react/logo192.png',
+              badge: '/english-vocabulary-react/logo192.png',
               tag: `emergency-${Date.now()}`,
               requireInteraction: false,
               data: payload.data

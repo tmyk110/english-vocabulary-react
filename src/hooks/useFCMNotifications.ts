@@ -239,8 +239,8 @@ export const useFCMNotifications = () => {
       // Create local notification
       const notification = new Notification('英単語学習リマインダー', {
         body: `「${randomWord.word}」の意味は覚えていますか？`,
-        icon: '/logo192.png',
-        badge: '/logo192.png',
+        icon: '/english-vocabulary-react/logo192.png',
+        badge: '/english-vocabulary-react/logo192.png',
         requireInteraction: false,
         tag: 'vocabulary-test'
       });
