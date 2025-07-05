@@ -271,36 +271,15 @@ export const useFCMNotifications = () => {
         .then((payload: any) => {
           console.log('Received foreground message:', payload);
           
-          // Show browser notification for foreground messages
-          if (payload.notification && Notification.permission === 'granted') {
-            const notification = new Notification(
-              payload.notification.title || '英単語学習リマインダー',
-              {
-                body: payload.notification.body || '新しい学習リマインダーがあります',
-                icon: payload.notification.image || '/logo192.png',
-                badge: '/logo192.png',
-                data: payload.data,
-                requireInteraction: false,
-                tag: 'fcm-foreground-' + Date.now()
-              }
-            );
-
-            notification.onclick = () => {
-              console.log('Foreground notification clicked');
-              window.focus();
-              notification.close();
-              
-              // If the notification contains word data, you could navigate to a specific page
-              if (payload.data?.word) {
-                console.log(`User clicked on notification for word: ${payload.data.word}`);
-              }
-            };
-
-            // Auto close after 5 seconds
-            setTimeout(() => {
-              notification.close();
-            }, 5000);
+          // Log the message data but don't show duplicate notification
+          // Service Worker will handle background notifications
+          // For foreground, we'll let the user know via console/UI updates instead
+          if (payload.data?.word) {
+            console.log(`📚 New vocabulary reminder: ${payload.data.word} - ${payload.data.meaning}`);
           }
+          
+          // Optional: You could show an in-app banner/toast instead of browser notification
+          // This prevents duplicate notifications while still providing feedback
         })
         .catch((err) => console.log('Failed to receive message:', err));
     }

@@ -25,25 +25,39 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage(function(payload) {
   console.log('[firebase-messaging-sw.js] Received background message ', payload);
 
-  const notificationTitle = payload.notification?.title || '英単語学習リマインダー';
-  const notificationOptions = {
-    body: payload.notification?.body || '新しい学習リマインダーがあります',
-    icon: payload.notification?.icon || '/logo192.png',
-    badge: '/logo192.png',
-    data: payload.data,
-    actions: [
-      {
-        action: 'open',
-        title: '学習する'
-      },
-      {
-        action: 'close',
-        title: '後で'
-      }
-    ]
-  };
+  // Check if any client (tab) is currently focused
+  self.clients.matchAll({
+    type: 'window',
+    includeUncontrolled: true
+  }).then(function(clients) {
+    const isAnyClientFocused = clients.some(client => client.focused);
+    
+    // Only show notification if no client is focused (true background)
+    if (!isAnyClientFocused) {
+      const notificationTitle = payload.notification?.title || '英単語学習リマインダー';
+      const notificationOptions = {
+        body: payload.notification?.body || '新しい学習リマインダーがあります',
+        icon: payload.notification?.icon || '/logo192.png',
+        badge: '/logo192.png',
+        data: payload.data,
+        tag: 'vocabulary-reminder', // Use same tag to prevent duplicates
+        actions: [
+          {
+            action: 'open',
+            title: '学習する'
+          },
+          {
+            action: 'close',
+            title: '後で'
+          }
+        ]
+      };
 
-  self.registration.showNotification(notificationTitle, notificationOptions);
+      self.registration.showNotification(notificationTitle, notificationOptions);
+    } else {
+      console.log('[firebase-messaging-sw.js] Client is focused, skipping background notification');
+    }
+  });
 });
 
 // Handle notification click
