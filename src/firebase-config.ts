@@ -120,8 +120,8 @@ export const requestNotificationPermission = async (): Promise<string | null> =>
                 }
               }
               
-              const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-                scope: '/firebase-cloud-messaging-push-scope',
+              const registration = await navigator.serviceWorker.register('/english-vocabulary-react/firebase-messaging-sw.js', {
+                scope: '/english-vocabulary-react/',
               });
               console.log('Service worker registered:', registration);
               
