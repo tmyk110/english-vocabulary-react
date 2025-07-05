@@ -94,57 +94,60 @@ export const requestNotificationPermission = async (): Promise<string | null> =>
       console.log('Notification permission granted.');
       
       try {
-        // Try to get token without service worker first (for development)
-        console.log('Attempting to get FCM token...');
-        const token = await getToken(messaging, {
-          vapidKey: vapidKey,
-        });
-        
-        if (token) {
-          console.log('FCM Registration Token:', token);
-          return token;
-        } else {
-          console.log('No registration token available. Trying with service worker...');
+        // First, register service worker before requesting token
+        if ('serviceWorker' in navigator) {
+          console.log('Registering Firebase service worker first...');
           
-          // Try to register service worker manually
-          if ('serviceWorker' in navigator) {
-            try {
-              console.log('Attempting to register Firebase service worker...');
-              
-              // Clear any existing registrations first
-              const existingRegistrations = await navigator.serviceWorker.getRegistrations();
-              for (const registration of existingRegistrations) {
-                if (registration.scope.includes('firebase-messaging-sw')) {
-                  await registration.unregister();
-                  console.log('Unregistered existing Firebase SW');
-                }
-              }
-              
-              const registration = await navigator.serviceWorker.register('/english-vocabulary-react/firebase-messaging-sw.js', {
-                scope: '/english-vocabulary-react/',
-              });
-              console.log('Service worker registered:', registration);
-              
-              // Wait for service worker to activate
-              await new Promise(resolve => setTimeout(resolve, 2000));
-              
-              // Try to get token again
-              const tokenWithSW = await getToken(messaging, {
-                vapidKey: vapidKey,
-                serviceWorkerRegistration: registration,
-              });
-              
-              if (tokenWithSW) {
-                console.log('FCM Registration Token (with SW):', tokenWithSW);
-                return tokenWithSW;
-              } else {
-                console.error('Failed to get token even with service worker');
-              }
-            } catch (swError) {
-              console.error('Service worker registration failed:', swError);
+          // Clear any existing registrations first
+          const existingRegistrations = await navigator.serviceWorker.getRegistrations();
+          for (const registration of existingRegistrations) {
+            if (registration.scope.includes('firebase') || registration.scope.includes('messaging')) {
+              await registration.unregister();
+              console.log('Unregistered existing Firebase SW');
             }
           }
           
+          try {
+            const registration = await navigator.serviceWorker.register('/english-vocabulary-react/firebase-messaging-sw.js', {
+              scope: '/english-vocabulary-react/',
+            });
+            console.log('Service worker registered successfully:', registration);
+            
+            // Wait for service worker to activate
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // Now try to get token with registered service worker
+            console.log('Attempting to get FCM token with service worker...');
+            const token = await getToken(messaging, {
+              vapidKey: vapidKey,
+              serviceWorkerRegistration: registration,
+            });
+            
+            if (token) {
+              console.log('FCM Registration Token:', token);
+              return token;
+            } else {
+              console.error('Failed to get token even with service worker');
+              return null;
+            }
+          } catch (swError) {
+            console.error('Service worker registration failed:', swError);
+            
+            // Fallback: try without service worker (might work in some cases)
+            console.log('Trying to get token without service worker as fallback...');
+            const fallbackToken = await getToken(messaging, {
+              vapidKey: vapidKey,
+            });
+            
+            if (fallbackToken) {
+              console.log('FCM Registration Token (fallback):', fallbackToken);
+              return fallbackToken;
+            }
+            
+            return null;
+          }
+        } else {
+          console.error('Service Worker not supported in this browser');
           return null;
         }
       } catch (tokenError) {
