@@ -187,10 +187,19 @@ export const onMessageListener = () =>
     import('firebase/messaging').then(({ onMessage }) => {
       onMessage(messaging!, (payload) => {
         console.log('🔔 EMERGENCY: Received foreground message:', payload);
-        console.log('🔔 EMERGENCY: Manually creating notification');
         
-        // Manually create notification since Service Worker isn't working
-        if (Notification.permission === 'granted' && payload.notification) {
+        // Check if page is in foreground (visible and focused)
+        const isPageVisible = document.visibilityState === 'visible';
+        const isPageFocused = document.hasFocus();
+        const isTrueForeground = isPageVisible && isPageFocused;
+        
+        console.log('🔔 EMERGENCY: Page state - visible:', isPageVisible, 'focused:', isPageFocused, 'trueForeground:', isTrueForeground);
+        
+        // Only create manual notification if page is truly in foreground
+        // If page is in background, Service Worker should handle it
+        if (isTrueForeground && Notification.permission === 'granted' && payload.notification) {
+          console.log('🔔 EMERGENCY: Creating foreground notification (page is active)');
+          
           const notification = new Notification(
             payload.notification.title || '英単語学習リマインダー',
             {
@@ -212,6 +221,8 @@ export const onMessageListener = () =>
           setTimeout(() => notification.close(), 5000);
           
           console.log('🔔 EMERGENCY: Notification created manually');
+        } else {
+          console.log('🔔 EMERGENCY: Skipping manual notification - Service Worker should handle this');
         }
         
         resolve(payload);
