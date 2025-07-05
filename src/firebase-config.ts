@@ -195,9 +195,9 @@ export const onMessageListener = () =>
         
         console.log('🔔 EMERGENCY: Page state - visible:', isPageVisible, 'focused:', isPageFocused, 'trueForeground:', isTrueForeground);
         
-        // Only create manual notification if page is truly in foreground
-        // If page is in background, Service Worker should handle it
-        if (isTrueForeground && Notification.permission === 'granted' && payload.notification) {
+        // Always create notification in foreground to ensure single tab users get notifications
+        // Use different logic: if visible, create notification regardless of focus
+        if (isPageVisible && Notification.permission === 'granted' && payload.notification) {
           console.log('🔔 EMERGENCY: Creating foreground notification (page is active)');
           
           const notification = new Notification(

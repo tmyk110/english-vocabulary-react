@@ -72,7 +72,7 @@ messaging.onBackgroundMessage(function(payload) {
   
   // Enhanced duplicate prevention: Check both existing notifications and recent message cache
   const recentMessageKey = `recent_message_${messageId}`;
-  const cacheExpiry = 5000; // 5 seconds
+  const cacheExpiry = 10000; // 10 seconds - increased for better duplicate prevention
   
   // Check if we've recently processed this message
   if (self[recentMessageKey] && (Date.now() - self[recentMessageKey]) < cacheExpiry) {
@@ -80,8 +80,22 @@ messaging.onBackgroundMessage(function(payload) {
     return;
   }
   
-  // Mark this message as processed
+  // Mark this message as processed IMMEDIATELY to prevent race conditions
   self[recentMessageKey] = Date.now();
+  
+  // Additional check for global message processing cache
+  const globalMessageKey = `global_${messageId}`;
+  if (globalThis[globalMessageKey]) {
+    console.log('[firebase-messaging-sw.js] ⚠️ Message already processed globally, skipping');
+    return;
+  }
+  globalThis[globalMessageKey] = true;
+  
+  // Clean up old cache entries
+  setTimeout(() => {
+    delete self[recentMessageKey];
+    delete globalThis[globalMessageKey];
+  }, cacheExpiry);
   
   // Also check for existing notifications with the same tag
   self.registration.getNotifications({ tag: uniqueTag })
