@@ -23,6 +23,7 @@ import { Auth } from './components/Auth';
 import { WordRegistration } from './components/WordRegistration';
 import { WordList } from './components/WordList';
 import NotificationSettings from './components/NotificationSettings';
+import EnvironmentCheck from './components/EnvironmentCheck';
 
 function App(): React.JSX.Element {
   const [currentTab, setCurrentTab] = useState(0);
@@ -30,6 +31,7 @@ function App(): React.JSX.Element {
   const [authLoading, setAuthLoading] = useState(true);
   const [showAuth, setShowAuth] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [envErrorOpen, setEnvErrorOpen] = useState(false);
 
   // カスタムフックを使用して単語関連の状態と操作を管理
   const {
@@ -41,6 +43,16 @@ function App(): React.JSX.Element {
   } = useVocabularyWords(user);
 
   useEffect(() => {
+    // 環境変数をチェック
+    const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
+    const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseKey) {
+      setEnvErrorOpen(true);
+      setAuthLoading(false);
+      return;
+    }
+
     // 認証状態を監視
     const {
       data: { subscription },
@@ -230,6 +242,11 @@ function App(): React.JSX.Element {
           </Container>
         </Box>
       )}
+      
+      <EnvironmentCheck 
+        open={envErrorOpen} 
+        onClose={() => setEnvErrorOpen(false)} 
+      />
     </ThemeProvider>
   );
 }

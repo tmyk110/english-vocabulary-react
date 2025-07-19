@@ -8,4 +8,7 @@ console.log('Supabase config:', {
   key: supabaseKey ? 'SET' : 'MISSING' 
 })
 
-export const supabase = createClient(supabaseUrl, supabaseKey)
+// 環境変数が設定されていない場合はダミークライアントを作成
+export const supabase = supabaseUrl && supabaseKey 
+  ? createClient(supabaseUrl, supabaseKey)
+  : createClient('https://dummy.supabase.co', 'dummy-key')
