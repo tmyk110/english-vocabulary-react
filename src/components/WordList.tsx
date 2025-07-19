@@ -21,6 +21,7 @@ import {
   Psychology,
   ExpandMore,
   ExpandLess,
+  Edit,
 } from '@mui/icons-material';
 import type { VocabularyWord } from '../types';
 import { useSpeechSynthesis } from '../hooks/useSpeechSynthesis';
@@ -29,12 +30,14 @@ interface WordListProps {
   words: VocabularyWord[];
   loading: boolean;
   onDeleteWord: (id: number | string) => Promise<void>;
+  onEditWord: (word: VocabularyWord) => void;
 }
 
 export const WordList: React.FC<WordListProps> = ({
   words,
   loading,
   onDeleteWord,
+  onEditWord,
 }) => {
   const [visibleMeanings, setVisibleMeanings] = useState<Set<number | string>>(
     new Set()
@@ -189,9 +192,31 @@ export const WordList: React.FC<WordListProps> = ({
                   <Collapse in={visibleMeanings.has(word.id)}>
                     <Box>
                       <Divider sx={{ mb: 2 }} />
-                      <Typography variant='body1' color='text.secondary'>
+                      <Typography variant='body1' color='text.secondary' sx={{ mb: 2 }}>
                         {word.meaning}
                       </Typography>
+                      {word.example && (
+                        <Box>
+                          <Typography variant='subtitle2' color='text.primary' sx={{ fontWeight: 'bold', mb: 1 }}>
+                            例文:
+                          </Typography>
+                          <Typography 
+                            variant='body2' 
+                            color='text.secondary'
+                            sx={{ 
+                              fontStyle: 'italic',
+                              pl: 2,
+                              borderLeft: '3px solid',
+                              borderColor: 'primary.light',
+                              backgroundColor: 'grey.50',
+                              p: 1,
+                              borderRadius: 1
+                            }}
+                          >
+                            {word.example}
+                          </Typography>
+                        </Box>
+                      )}
                     </Box>
                   </Collapse>
 
@@ -230,13 +255,22 @@ export const WordList: React.FC<WordListProps> = ({
                       <Psychology />
                     </IconButton>
                   </Box>
-                  <IconButton
-                    onClick={() => onDeleteWord(word.id)}
-                    color='error'
-                    aria-label='削除'
-                  >
-                    <Delete />
-                  </IconButton>
+                  <Box>
+                    <IconButton
+                      onClick={() => onEditWord(word)}
+                      color='info'
+                      aria-label='編集'
+                    >
+                      <Edit />
+                    </IconButton>
+                    <IconButton
+                      onClick={() => onDeleteWord(word.id)}
+                      color='error'
+                      aria-label='削除'
+                    >
+                      <Delete />
+                    </IconButton>
+                  </Box>
                 </CardActions>
               </Card>
             </Grid>

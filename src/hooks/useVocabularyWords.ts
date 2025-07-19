@@ -7,6 +7,7 @@ interface UseVocabularyWordsReturn {
   loading: boolean;
   fetchWords: () => Promise<void>;
   addWord: (word: string, meaning: string) => Promise<void>;
+  editWord: (id: number | string, word: string, meaning: string, example?: string) => Promise<void>;
   deleteWord: (id: number | string) => Promise<void>;
   setWords: React.Dispatch<React.SetStateAction<VocabularyWord[]>>;
 }
@@ -105,6 +106,52 @@ export const useVocabularyWords = (
     [user, words, saveToLocalStorage, fetchWords]
   );
 
+  const editWord = useCallback(
+    async (id: number | string, word: string, meaning: string, example?: string): Promise<void> => {
+      if (!word.trim() || !meaning.trim() || !user) return;
+
+      try {
+        setLoading(true);
+        const updateData: { word: string; meaning: string; example?: string } = {
+          word: word.trim(),
+          meaning: meaning.trim(),
+        };
+        
+        if (example !== undefined) {
+          updateData.example = example.trim() || undefined;
+        }
+
+        const { error } = await supabase
+          .from('vocabulary_words')
+          .update(updateData)
+          .eq('id', id);
+
+        if (error) {
+          const updatedWords = words.map((w) =>
+            w.id === id
+              ? { ...w, word: word.trim(), meaning: meaning.trim(), example: example?.trim() || undefined }
+              : w
+          );
+          setWords(updatedWords);
+          saveToLocalStorage(updatedWords);
+        } else {
+          await fetchWords();
+        }
+      } catch (error) {
+        const updatedWords = words.map((w) =>
+          w.id === id
+            ? { ...w, word: word.trim(), meaning: meaning.trim(), example: example?.trim() || undefined }
+            : w
+        );
+        setWords(updatedWords);
+        saveToLocalStorage(updatedWords);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [user, words, saveToLocalStorage, fetchWords]
+  );
+
   const deleteWord = useCallback(
     async (id: number | string): Promise<void> => {
       try {
@@ -143,6 +190,7 @@ export const useVocabularyWords = (
     loading,
     fetchWords,
     addWord,
+    editWord,
     deleteWord,
     setWords,
   };

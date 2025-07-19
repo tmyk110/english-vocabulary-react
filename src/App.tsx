@@ -17,13 +17,14 @@ import {
 import { AccountCircle, Logout } from '@mui/icons-material';
 import { supabase } from './supabaseClient';
 import { theme } from './theme';
-import type { User } from './types';
+import type { User, VocabularyWord } from './types';
 import { useVocabularyWords } from './hooks/useVocabularyWords';
 import { Auth } from './components/Auth';
 import { WordRegistration } from './components/WordRegistration';
 import { WordList } from './components/WordList';
 import NotificationSettings from './components/NotificationSettings';
 import EnvironmentCheck from './components/EnvironmentCheck';
+import WordEditDialog from './components/WordEditDialog';
 
 function App(): React.JSX.Element {
   const [currentTab, setCurrentTab] = useState(0);
@@ -32,12 +33,15 @@ function App(): React.JSX.Element {
   const [showAuth, setShowAuth] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [envErrorOpen, setEnvErrorOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingWord, setEditingWord] = useState<VocabularyWord | null>(null);
 
   // カスタムフックを使用して単語関連の状態と操作を管理
   const {
     words,
     loading,
     addWord: addVocabularyWord,
+    editWord: editVocabularyWord,
     deleteWord: deleteVocabularyWord,
     setWords,
   } = useVocabularyWords(user);
@@ -75,6 +79,25 @@ function App(): React.JSX.Element {
     meaning: string
   ): Promise<void> => {
     await addVocabularyWord(word, meaning);
+  };
+
+  const handleEditWord = (word: VocabularyWord): void => {
+    setEditingWord(word);
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveEditedWord = async (
+    id: number | string,
+    word: string,
+    meaning: string,
+    example?: string
+  ): Promise<void> => {
+    await editVocabularyWord(id, word, meaning, example);
+  };
+
+  const handleCloseEditDialog = (): void => {
+    setEditDialogOpen(false);
+    setEditingWord(null);
   };
 
   const handleLogout = async (): Promise<void> => {
@@ -117,6 +140,7 @@ function App(): React.JSX.Element {
             words={words}
             loading={loading}
             onDeleteWord={deleteVocabularyWord}
+            onEditWord={handleEditWord}
           />
         );
       case 2:
@@ -246,6 +270,14 @@ function App(): React.JSX.Element {
       <EnvironmentCheck 
         open={envErrorOpen} 
         onClose={() => setEnvErrorOpen(false)} 
+      />
+      
+      <WordEditDialog
+        open={editDialogOpen}
+        word={editingWord}
+        onClose={handleCloseEditDialog}
+        onSave={handleSaveEditedWord}
+        loading={loading}
       />
     </ThemeProvider>
   );
